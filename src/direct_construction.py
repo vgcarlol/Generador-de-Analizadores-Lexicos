@@ -29,7 +29,7 @@ class State:
 class DirectAFDConstructor:
     
     def __init__(self, regex_postfix):
-        self.regex_postfix = regex_postfix
+        self.regex_postfix = regex_postfix.split()
         self.symbol_positions = {}  # Mapear símbolos a posiciones en el árbol
         self.followpos = defaultdict(set)  # Mapa de followpos para cada posición
         self.start_state = self.construct_afd()

@@ -1,0 +1,28 @@
+(* Ejemplo de archivo lexer.yal *)
+
+{
+# Código de header que se copiará al inicio del analizador generado
+import sys
+}
+
+let digit      = [0-9]
+let letter     = [a-zA-Z]
+let identifier = {letter}({letter}|{digit})*
+
+rule gettoken =
+    [' ' '\t']       { /* Saltar espacios y tabulaciones */ }
+  | ['\n']           { return EOL; }
+  | {digit}+         { return INT; }
+  | '+'              { return PLUS; }
+  | '-'              { return MINUS; }
+  | '*'              { return TIMES; }
+  | '/'              { return DIV; }
+  | '('              { return LPAREN; }
+  | ')'              { return RPAREN; }
+  | {identifier}     { return IDENTIFIER; }
+  | eof              { return EOF; }
+
+{
+# Código de trailer que se copiará al final del analizador generado
+# Fin del analizador léxico
+}
