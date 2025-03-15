@@ -17,7 +17,7 @@ def lex(input_string):
         max_length = 0
         selected_token = None
         selected_action = None
-        # Evaluar cada regla
+        # Evaluar cada regla (longest match + prioridad)
         # Regla TOKEN_0
         regex = "[' ' '\\t']"
         pattern = re.compile(r'^' + regex)

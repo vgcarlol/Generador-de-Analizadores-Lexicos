@@ -17,11 +17,13 @@ def parse_yalex_file(file_path):
         content = f.read()
     content = remove_comments(content)
 
+    # Extraer header (primer bloque entre llaves)
     header = ""
     header_match = re.search(r'^\s*\{(.*?)\}', content, re.DOTALL)
     if header_match:
         header = header_match.group(1).strip()
 
+    # Extraer trailer (último bloque entre llaves), descartándolo si contiene "rule" o "let"
     trailer = ""
     trailer_match = re.search(r'\{(.*?)\}\s*$', content, re.DOTALL)
     if trailer_match:
@@ -31,6 +33,7 @@ def parse_yalex_file(file_path):
         else:
             trailer = trailer_candidate
 
+    # Definiciones: líneas con "let"
     definitions = {}
     for line in content.splitlines():
         line = line.strip()
@@ -41,6 +44,7 @@ def parse_yalex_file(file_path):
                 regex_def = line[eq_index+1:].strip()
                 definitions[name] = regex_def
 
+    # Reglas: a partir de "rule <nombre> =" hasta la siguiente llave o fin de archivo
     rules = []
     rule_match = re.search(r'rule\s+\w+\s*(\[[^\]]*\])?\s*=(.*?)(?=\n\s*\{|\Z)', content, re.DOTALL | re.IGNORECASE)
     if rule_match:
@@ -52,11 +56,14 @@ def parse_yalex_file(file_path):
             last_open = line.rfind('{')
             last_close = line.rfind('}')
             if last_open != -1 and last_close != -1 and last_close > last_open:
+                # regex_rule es lo que está antes de '{'
                 regex_rule = line[:last_open].strip()
+                # action es lo que está dentro de '{ ... }'
                 action = line[last_open+1:last_close].strip()
                 if regex_rule:
                     rules.append((regex_rule, action))
             else:
+                # no hay acción con llaves, o la línea es solo la expresión
                 if line:
                     rules.append((line, ""))
     return header, definitions, rules, trailer
@@ -67,42 +74,27 @@ def build_afd_for_rule(regex, definitions):
     while prev != regex:
         prev = regex
         for name, def_regex in definitions.items():
+            # Reemplaza {name} por (def_regex)
             regex = re.sub(r'\{' + re.escape(name) + r'\}', f"({def_regex})", regex)
+
+    # Si la ER está entre comillas simples, quitar comillas y escapar
     if regex.startswith("'") and regex.endswith("'"):
         final_regex = re.escape(regex[1:-1])
     else:
         final_regex = regex
+
+    # Convertir a postfix
     regex_postfix = RegexParser.infix_to_postfix(final_regex)
+
+    # Construir el AFD
     afd_constructor = DirectAFDConstructor(regex_postfix)
     afd = afd_constructor.get_afd()
-    minimized_afd = AFDMinimizer(afd).minimize()
-    return minimized_afd, final_regex, afd_constructor.syntax_tree
 
-def visualize_combined_syntax_trees(rule_tree_list, filename='combined_syntax_tree'):
-    from graphviz import Digraph
-    dot = Digraph()
-    dot.node('root', 'Tokens')
-    for token_name, syntax_tree in rule_tree_list:
-        # Asigna un nodo al raíz de cada árbol
-        root_id = str(id(syntax_tree))
-        dot.node(root_id, token_name)
-        dot.edge('root', root_id)
-        # Función recursiva para agregar el árbol
-        def traverse(node):
-            if node is None:
-                return
-            node_id = str(id(node))
-            dot.node(node_id, node.symbol)
-            if node.left:
-                left_id = str(id(node.left))
-                dot.edge(node_id, left_id, label="L")
-                traverse(node.left)
-            if node.right:
-                right_id = str(id(node.right))
-                dot.edge(node_id, right_id, label="R")
-                traverse(node.right)
-        traverse(syntax_tree)
-    dot.render(filename, format='png', view=True)
+    # Minimizar
+    minimized_afd = AFDMinimizer(afd).minimize()
+
+    # Retornar el AFD minimizado, la ER final, y el árbol sintáctico
+    return minimized_afd, final_regex, afd_constructor.syntax_tree
 
 def generate_lexer_spec(yalex_file_path, output_file):
     header, definitions, rules, trailer = parse_yalex_file(yalex_file_path)
@@ -111,16 +103,17 @@ def generate_lexer_spec(yalex_file_path, output_file):
     print("Definiciones:", definitions)
     print("Reglas:", rules)
     print("Trailer:", trailer)
-    
-    # Para cada regla se genera el AFD y se obtiene la expresión final y el árbol sintáctico.
-    rule_afd_list = []
+
+    # Generar un AFD (y árbol) para cada regla
+    rule_info = []
     for idx, (regex_rule, action) in enumerate(rules):
         token_name = f"TOKEN_{idx}"
         afd, final_regex, syntax_tree = build_afd_for_rule(regex_rule, definitions)
-        rule_afd_list.append((token_name, afd, action, final_regex, syntax_tree))
-    
-    # Generar el código para el analizador léxico en thelexer.py.
+        rule_info.append((token_name, afd, action, final_regex, syntax_tree))
+
+    # Generar thelexer.py
     lexer_code = []
+    lexer_code.append("# Archivo generado automáticamente por YALex Generator")
     lexer_code.append(header)
     lexer_code.append("")
     lexer_code.append("import sys")
@@ -138,9 +131,9 @@ def generate_lexer_spec(yalex_file_path, output_file):
     lexer_code.append("        max_length = 0")
     lexer_code.append("        selected_token = None")
     lexer_code.append("        selected_action = None")
-    lexer_code.append("        # Evaluar cada regla")
-    for token_name, afd, action, final_regex, syntax_tree in rule_afd_list:
-        lexer_code.append("        # Regla " + token_name)
+    lexer_code.append("        # Evaluar cada regla (longest match + prioridad)")
+    for token_name, afd, action, final_regex, syntax_tree in rule_info:
+        lexer_code.append(f"        # Regla {token_name}")
         lexer_code.append(f"        regex = {repr(final_regex)}")
         lexer_code.append("        pattern = re.compile(r'^' + regex)")
         lexer_code.append("        m = pattern.match(input_string[pos:])")
@@ -151,6 +144,7 @@ def generate_lexer_spec(yalex_file_path, output_file):
         lexer_code.append(f"                selected_token = '{token_name}'")
         lexer_code.append(f"                selected_action = '''{action}'''")
         lexer_code.append("")
+
     lexer_code.append("        if max_length == 0:")
     lexer_code.append("            print(f'Error léxico en la posición {pos}: {input_string[pos]}')")
     lexer_code.append("            pos += 1")
@@ -174,46 +168,29 @@ def generate_lexer_spec(yalex_file_path, output_file):
     lexer_code.append("    main()")
     lexer_code.append("")
     lexer_code.append(trailer)
-    
+
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write("\n".join(lexer_code))
     print(f"Archivo lexer generado: {output_file}")
-    
-    # Generar un único árbol combinado de todas las reglas
-    # Se recopilan los árboles de cada regla (token_name y syntax_tree)
-    combined_tree_list = [(token_name, syntax_tree) for token_name, afd, action, final_regex, syntax_tree in rule_afd_list]
-    if combined_tree_list:
-        visualize_combined_syntax_trees(combined_tree_list, filename="combined_syntax_tree")
-        print("Árbol sintáctico combinado guardado en 'combined_syntax_tree.png'.")
-    else:
-        print("No se encontraron reglas para combinar.")
 
-def visualize_combined_syntax_trees(rule_tree_list, filename='combined_syntax_tree'):
-    from graphviz import Digraph
-    dot = Digraph()
-    dot.node('root', 'Tokens')
-    for token_name, syntax_tree in rule_tree_list:
-        root_id = str(id(syntax_tree))
-        dot.node(root_id, token_name)
-        dot.edge('root', root_id)
-        def traverse(node):
-            if node is None:
-                return
-            node_id = str(id(node))
-            dot.node(node_id, node.symbol)
-            if node.left:
-                dot.edge(node_id, str(id(node.left)), label="L")
-                traverse(node.left)
-            if node.right:
-                dot.edge(node_id, str(id(node.right)), label="R")
-                traverse(node.right)
-        traverse(syntax_tree)
-    dot.render(filename, format='png', view=True)
+    # Generar un árbol sintáctico (y un PNG) por cada regla, en lugar de un "árbol combinado"
+    from visualization import visualize_syntax_tree
+    output_folder = "syntax_trees"
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    for idx, (token_name, afd, action, final_regex, syntax_tree) in enumerate(rule_info):
+        tree_filename = os.path.join(output_folder, f"syntax_tree_{token_name}")
+        visualize_syntax_tree(syntax_tree, filename=tree_filename)
+        print(f"Árbol sintáctico de la regla '{token_name}' guardado en '{tree_filename}.png'.")
 
-if __name__ == "__main__":
+
+def main():
     if len(sys.argv) < 3:
         print("Uso: python yalex_generator.py <archivo_yalex> <archivo_salida>")
         sys.exit(1)
     yalex_file = sys.argv[1]
     output_file = sys.argv[2]
     generate_lexer_spec(yalex_file, output_file)
+
+if __name__ == "__main__":
+    main()
