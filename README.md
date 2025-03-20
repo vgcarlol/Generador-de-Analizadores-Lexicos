@@ -60,11 +60,11 @@ El proyecto se utiliza en dos etapas principales:
 
 1. **Clona el repositorio:**
     ```sh
-    git clone https://github.com/vgcarlol/Construccion-Directa-de-AFD
+    git clone https://github.com/vgcarlol/Generador-de-Analizadores-Lexicos
     ```
 2. **Navega al directorio del proyecto:**
     ```sh
-    cd Construccion-Directa-de-AFD/
+    cd Generador-de-Analizadores-Lexicos/
     ```
 3. **Instala las dependencias:**
     ```sh
