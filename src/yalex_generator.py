@@ -70,31 +70,41 @@ def parse_yalex_file(file_path):
 
 def build_afd_for_rule(regex, definitions):
     import re
-    prev = None
-    while prev != regex:
-        prev = regex
-        for name, def_regex in definitions.items():
-            # Reemplaza {name} por (def_regex)
-            regex = re.sub(r'\{' + re.escape(name) + r'\}', f"({def_regex})", regex)
+    # Si la regla coincide exactamente con una definición, reemplazarla
+    if regex.strip() in definitions:
+        regex = definitions[regex.strip()]
 
-    # Si la ER está entre comillas simples, quitar comillas y escapar
-    if regex.startswith("'") and regex.endswith("'"):
-        final_regex = re.escape(regex[1:-1])
+    # Reemplazo de palabras completas: para cada definición,
+    # se sustituye la aparición exacta del nombre por su definición entre paréntesis.
+    for name, def_regex in definitions.items():
+        # Usamos \b para asegurar que se reemplaza el nombre como palabra completa
+        regex = re.sub(r'\b' + re.escape(name) + r'\b', f"({def_regex})", regex)
+
+    # Si la ER está entre comillas simples o dobles, quitar las comillas, escapar y volver a envolver
+    if (regex.startswith("'") and regex.endswith("'")) or (regex.startswith('"') and regex.endswith('"')):
+        inner = re.escape(regex[1:-1])
+        final_regex = "'" + inner + "'"
     else:
         final_regex = regex
 
-    # Convertir a postfix
+    # Convertir a postfix usando nuestro parser modificado
     regex_postfix = RegexParser.infix_to_postfix(final_regex)
-
-    # Construir el AFD
     afd_constructor = DirectAFDConstructor(regex_postfix)
     afd = afd_constructor.get_afd()
-
-    # Minimizar
     minimized_afd = AFDMinimizer(afd).minimize()
 
-    # Retornar el AFD minimizado, la ER final, y el árbol sintáctico
-    return minimized_afd, final_regex, afd_constructor.syntax_tree
+    print("\n===================================")
+    print("Expresión final:")
+    print(final_regex)
+    print("\nPostfix generado:")
+    print(regex_postfix)
+    print("\nMapping de marcadores:")
+    print(afd_constructor.symbol_positions)
+    print("===================================\n")
+
+    return minimized_afd, final_regex, regex_postfix, afd_constructor.symbol_positions, afd_constructor.syntax_tree
+
+
 
 def generate_lexer_spec(yalex_file_path, output_file):
     header, definitions, rules, trailer = parse_yalex_file(yalex_file_path)
@@ -108,13 +118,16 @@ def generate_lexer_spec(yalex_file_path, output_file):
     rule_info = []
     for idx, (regex_rule, action) in enumerate(rules):
         token_name = f"TOKEN_{idx}"
-        afd, final_regex, syntax_tree = build_afd_for_rule(regex_rule, definitions)
-        rule_info.append((token_name, afd, action, final_regex, syntax_tree))
+        afd, final_regex, regex_postfix, mapping, syntax_tree = build_afd_for_rule(regex_rule, definitions)
+        rule_info.append((token_name, afd, action, final_regex, regex_postfix, mapping, syntax_tree))
 
     # Generar thelexer.py
     lexer_code = []
     lexer_code.append("# Archivo generado automáticamente por YALex Generator")
-    lexer_code.append(header)
+    # Incluir el header como comentarios para evitar errores de ejecución
+    if header:
+        for line in header.splitlines():
+            lexer_code.append("# " + line)
     lexer_code.append("")
     lexer_code.append("import sys")
     lexer_code.append("import re")
@@ -132,7 +145,7 @@ def generate_lexer_spec(yalex_file_path, output_file):
     lexer_code.append("        selected_token = None")
     lexer_code.append("        selected_action = None")
     lexer_code.append("        # Evaluar cada regla (longest match + prioridad)")
-    for token_name, afd, action, final_regex, syntax_tree in rule_info:
+    for token_name, afd, action, final_regex, regex_postfix, mapping, syntax_tree in rule_info:
         lexer_code.append(f"        # Regla {token_name}")
         lexer_code.append(f"        regex = {repr(final_regex)}")
         lexer_code.append("        pattern = re.compile(r'^' + regex)")
@@ -144,7 +157,6 @@ def generate_lexer_spec(yalex_file_path, output_file):
         lexer_code.append(f"                selected_token = '{token_name}'")
         lexer_code.append(f"                selected_action = '''{action}'''")
         lexer_code.append("")
-
     lexer_code.append("        if max_length == 0:")
     lexer_code.append("            print(f'Error léxico en la posición {pos}: {input_string[pos]}')")
     lexer_code.append("            pos += 1")
@@ -173,16 +185,16 @@ def generate_lexer_spec(yalex_file_path, output_file):
         f.write("\n".join(lexer_code))
     print(f"Archivo lexer generado: {output_file}")
 
+
     # Generar un árbol sintáctico (y un PNG) por cada regla, en lugar de un "árbol combinado"
     from visualization import visualize_syntax_tree
     output_folder = "syntax_trees"
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    for idx, (token_name, afd, action, final_regex, syntax_tree) in enumerate(rule_info):
+    for idx, (token_name, afd, action, final_regex, regex_postfix, mapping, syntax_tree) in enumerate(rule_info):
         tree_filename = os.path.join(output_folder, f"syntax_tree_{token_name}")
         visualize_syntax_tree(syntax_tree, filename=tree_filename)
         print(f"Árbol sintáctico de la regla '{token_name}' guardado en '{tree_filename}.png'.")
-
 
 def main():
     if len(sys.argv) < 3:
