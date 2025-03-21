@@ -1,5 +1,3 @@
-# yalex_generator.py
-
 import re
 import os
 import sys
@@ -16,14 +14,10 @@ def parse_yalex_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     content = remove_comments(content)
-
-    # Extraer header (primer bloque entre llaves)
     header = ""
     header_match = re.search(r'^\s*\{(.*?)\}', content, re.DOTALL)
     if header_match:
         header = header_match.group(1).strip()
-
-    # Extraer trailer (último bloque entre llaves), descartándolo si contiene "rule" o "let"
     trailer = ""
     trailer_match = re.search(r'\{(.*?)\}\s*$', content, re.DOTALL)
     if trailer_match:
@@ -32,8 +26,6 @@ def parse_yalex_file(file_path):
             trailer = ""
         else:
             trailer = trailer_candidate
-
-    # Definiciones: líneas con "let"
     definitions = {}
     for line in content.splitlines():
         line = line.strip()
@@ -43,8 +35,6 @@ def parse_yalex_file(file_path):
                 name = line[4:eq_index].strip()
                 regex_def = line[eq_index+1:].strip()
                 definitions[name] = regex_def
-
-    # Reglas: a partir de "rule <nombre> =" hasta la siguiente llave o fin de archivo
     rules = []
     rule_match = re.search(r'rule\s+\w+\s*(\[[^\]]*\])?\s*=(.*?)(?=\n\s*\{|\Z)', content, re.DOTALL | re.IGNORECASE)
     if rule_match:
@@ -56,55 +46,71 @@ def parse_yalex_file(file_path):
             last_open = line.rfind('{')
             last_close = line.rfind('}')
             if last_open != -1 and last_close != -1 and last_close > last_open:
-                # regex_rule es lo que está antes de '{'
                 regex_rule = line[:last_open].strip()
-                # action es lo que está dentro de '{ ... }'
                 action = line[last_open+1:last_close].strip()
                 if regex_rule:
                     rules.append((regex_rule, action))
             else:
-                # no hay acción con llaves, o la línea es solo la expresión
                 if line:
                     rules.append((line, ""))
     return header, definitions, rules, trailer
 
+def convert_set(def_str):
+    def_str = def_str.strip()
+    if def_str.startswith('[') and def_str.endswith(']'):
+        inner = def_str[1:-1].strip()
+        tokens = re.findall(r"['\"](.*?)['\"]", inner)
+        if tokens:
+            if len(tokens) >= 2 and len(tokens) % 2 == 0:
+                ranges = []
+                for i in range(0, len(tokens), 2):
+                    start = tokens[i]
+                    end = tokens[i+1]
+                    ranges.append(f"{start}-{end}")
+                return f"[{''.join(ranges)}]"
+            else:
+                return "[" + "".join(tokens) + "]"
+        else:
+            return "[" + inner.replace(" ", "") + "]"
+    return def_str
+
 def build_afd_for_rule(regex, definitions):
-    import re
-    # Si la regla coincide exactamente con una definición, reemplazarla
     if regex.strip() in definitions:
         regex = definitions[regex.strip()]
-
-    # Reemplazo de palabras completas: para cada definición,
-    # se sustituye la aparición exacta del nombre por su definición entre paréntesis.
-    for name, def_regex in definitions.items():
-        # Usamos \b para asegurar que se reemplaza el nombre como palabra completa
-        regex = re.sub(r'\b' + re.escape(name) + r'\b', f"({def_regex})", regex)
-
-    # Si la ER está entre comillas simples o dobles, quitar las comillas, escapar y volver a envolver
-    if (regex.startswith("'") and regex.endswith("'")) or (regex.startswith('"') and regex.endswith('"')):
-        inner = re.escape(regex[1:-1])
-        final_regex = "'" + inner + "'"
-    else:
-        final_regex = regex
-
-    # Convertir a postfix usando nuestro parser modificado
+    
+    for name in sorted(definitions, key=len, reverse=True):
+        def_regex = definitions[name]
+        conv = def_regex
+        if def_regex.startswith('[') and def_regex.endswith(']'):
+            conv = convert_set(def_regex)
+        else:
+            if not ((conv.startswith("'") and conv.endswith("'")) or (conv.startswith('"') and conv.endswith('"'))):
+                if any(ch in conv for ch in "()*|.?+"):
+                    pass
+                else:
+                    conv = "'" + conv + "'"
+        pattern = r'\b' + re.escape(name) + r'\b'
+        regex = re.sub(pattern, lambda m: f"({conv})", regex)
+    
+    final_regex = regex.strip()
+    # Obtenemos la lista de tokens en postfix
     regex_postfix = RegexParser.infix_to_postfix(final_regex)
+    # Para imprimir, unimos con espacio:
+    postfix_str = " ".join(regex_postfix)
     afd_constructor = DirectAFDConstructor(regex_postfix)
     afd = afd_constructor.get_afd()
     minimized_afd = AFDMinimizer(afd).minimize()
-
+    
     print("\n===================================")
     print("Expresión final:")
     print(final_regex)
     print("\nPostfix generado:")
-    print(regex_postfix)
+    print(postfix_str)
     print("\nMapping de marcadores:")
     print(afd_constructor.symbol_positions)
     print("===================================\n")
-
-    return minimized_afd, final_regex, regex_postfix, afd_constructor.symbol_positions, afd_constructor.syntax_tree
-
-
+    
+    return minimized_afd, final_regex, postfix_str, afd_constructor.symbol_positions, afd_constructor.syntax_tree
 
 def generate_lexer_spec(yalex_file_path, output_file):
     header, definitions, rules, trailer = parse_yalex_file(yalex_file_path)
@@ -113,18 +119,13 @@ def generate_lexer_spec(yalex_file_path, output_file):
     print("Definiciones:", definitions)
     print("Reglas:", rules)
     print("Trailer:", trailer)
-
-    # Generar un AFD (y árbol) para cada regla
     rule_info = []
     for idx, (regex_rule, action) in enumerate(rules):
         token_name = f"TOKEN_{idx}"
         afd, final_regex, regex_postfix, mapping, syntax_tree = build_afd_for_rule(regex_rule, definitions)
         rule_info.append((token_name, afd, action, final_regex, regex_postfix, mapping, syntax_tree))
-
-    # Generar thelexer.py
     lexer_code = []
     lexer_code.append("# Archivo generado automáticamente por YALex Generator")
-    # Incluir el header como comentarios para evitar errores de ejecución
     if header:
         for line in header.splitlines():
             lexer_code.append("# " + line)
@@ -180,13 +181,9 @@ def generate_lexer_spec(yalex_file_path, output_file):
     lexer_code.append("    main()")
     lexer_code.append("")
     lexer_code.append(trailer)
-
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write("\n".join(lexer_code))
     print(f"Archivo lexer generado: {output_file}")
-
-
-    # Generar un árbol sintáctico (y un PNG) por cada regla, en lugar de un "árbol combinado"
     from visualization import visualize_syntax_tree
     output_folder = "syntax_trees"
     if not os.path.exists(output_folder):
