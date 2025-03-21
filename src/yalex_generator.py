@@ -75,27 +75,37 @@ def convert_set(def_str):
     return def_str
 
 def build_afd_for_rule(regex, definitions):
+    # Si la regla coincide exactamente con una definición, reemplazarla
     if regex.strip() in definitions:
         regex = definitions[regex.strip()]
     
+    # Procesar las definiciones en orden descendente (por longitud)
     for name in sorted(definitions, key=len, reverse=True):
         def_regex = definitions[name]
         conv = def_regex
         if def_regex.startswith('[') and def_regex.endswith(']'):
             conv = convert_set(def_regex)
         else:
+            # Si no está ya entre comillas, y si no es compuesta (contiene operadores),
+            # se envuelve en comillas; de lo contrario se deja tal cual.
             if not ((conv.startswith("'") and conv.endswith("'")) or (conv.startswith('"') and conv.endswith('"'))):
                 if any(ch in conv for ch in "()*|.?+"):
                     pass
                 else:
                     conv = "'" + conv + "'"
+        # La diferencia respecto a versiones anteriores: si el conv es compuesto (contiene alguno de esos operadores),
+        # se utiliza tal cual sin agregar paréntesis extra.
+        if any(ch in conv for ch in "()*|.?+"):
+            replacement = conv
+        else:
+            replacement = f"({conv})"
         pattern = r'\b' + re.escape(name) + r'\b'
-        regex = re.sub(pattern, lambda m: f"({conv})", regex)
+        regex = re.sub(pattern, lambda m: replacement, regex)
     
     final_regex = regex.strip()
     # Obtenemos la lista de tokens en postfix
     regex_postfix = RegexParser.infix_to_postfix(final_regex)
-    # Para imprimir, unimos con espacio:
+    # Para impresión, unimos con espacios:
     postfix_str = " ".join(regex_postfix)
     afd_constructor = DirectAFDConstructor(regex_postfix)
     afd = afd_constructor.get_afd()

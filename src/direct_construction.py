@@ -38,8 +38,9 @@ class DirectAFDConstructor:
         position_counter = 1  # Contador para asignar posiciones únicas a hojas
 
         for symbol in self.regex_postfix:
-            # Caso operandos: alfanuméricos, '#' o literales (entre comillas) y conjuntos (entre corchetes)
-            if (symbol.isalnum() or symbol == "#" or
+            # Caso operandos: alfanuméricos, '#' o literales (entre comillas), conjuntos (entre corchetes)
+            # y ahora el caso en que el símbolo es exactamente "_"
+            if (symbol.isalnum() or symbol == "#" or symbol == "_" or
                 (symbol.startswith("'") and symbol.endswith("'")) or
                 (symbol.startswith('"') and symbol.endswith('"')) or
                 (symbol.startswith("[") and symbol.endswith("]"))):

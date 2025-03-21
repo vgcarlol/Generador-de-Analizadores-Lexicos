@@ -1,23 +1,15 @@
 def is_operand(token: str) -> bool:
-    # Considera operandos:
-    # - Literales entre comillas (simples o dobles)
-    # - Conjuntos: tokens que empiezan con '[' y terminan con ']'
-    # - Tokens alfanuméricos
-    # - Los tokens de cierre: ')' o '*' (que finalizan un operando)
+    # Ahora se incluye "_" como posible parte de un operando
     return ((token.startswith("'") and token.endswith("'")) or
             (token.startswith('"') and token.endswith('"')) or
             (token.startswith("[") and token.endswith("]")) or
-            token.isalnum() or token in {")", "*"})
+            token.isalnum() or token == "_" or token in {")", "*"})
 
 def can_start_operand(token: str) -> bool:
-    # Puede iniciar un operando si es:
-    # - Un literal (entre comillas)
-    # - Un conjunto (entre corchetes)
-    # - Un token alfanumérico
-    # - Un paréntesis de apertura
+    # Se permite que "_" inicie un operando
     return ((token.startswith("'") and token.endswith("'")) or
             (token.startswith("[") and token.endswith("]")) or
-            token.isalnum() or token == "(")
+            token.isalnum() or token == "_" or token == "(")
 
 class RegexParser:
     precedence = {'*': 3, '?': 3, '+': 3, '.': 2, '|': 1, '(': 0}
@@ -73,10 +65,10 @@ class RegexParser:
                     token += '}'
                     i += 1
                 tokens.append(token)
-            elif c.isalnum():
+            elif c.isalnum() or c == "_":
                 token = c
                 i += 1
-                while i < len(regex) and regex[i].isalnum():
+                while i < len(regex) and (regex[i].isalnum() or regex[i] == "_"):
                     token += regex[i]
                     i += 1
                 tokens.append(token)
@@ -105,7 +97,6 @@ class RegexParser:
 
     @staticmethod
     def infix_to_postfix(regex: str) -> list:
-        # Si la expresión es un solo caracter operador, se envuelve en comillas.
         if len(regex) == 1 and regex in {"*", "|", ".", "(", ")"}:
             regex = "'" + regex + "'"
         tokens = RegexParser.add_concatenation_operators(regex)
@@ -115,7 +106,7 @@ class RegexParser:
             if ((token.startswith("'") and token.endswith("'")) or 
                 (token.startswith("{") and token.endswith("}")) or 
                 (token.startswith("[") and token.endswith("]")) or 
-                token.startswith("\\") or token.isalnum() or token == "#"):
+                token.startswith("\\") or token.isalnum() or token == "_" or token == "#"):
                 output.append(token)
             elif token == '(':
                 stack.append(token)
@@ -131,4 +122,4 @@ class RegexParser:
         while stack:
             output.append(stack.pop())
         output.append("#")
-        return output  # Retornamos la lista de tokens
+        return output
