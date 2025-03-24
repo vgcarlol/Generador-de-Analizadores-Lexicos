@@ -158,6 +158,12 @@ def generate_lexer_spec(yalex_file_path, output_file):
     lexer_code.append("        # Evaluar cada regla (longest match + prioridad)")
     for token_name, afd, action, final_regex, regex_postfix, mapping, syntax_tree in rule_info:
         lexer_code.append(f"        # Regla {token_name}")
+        # Escapar literales entre comillas simples o dobles para evitar error "unterminated subpattern"
+        if (final_regex.startswith("'") and final_regex.endswith("'")) or \
+        (final_regex.startswith('"') and final_regex.endswith('"')):
+            content = final_regex[1:-1]         # quitar las comillas externas
+            content = re.escape(content)        # escapar caracteres especiales (por ejemplo '(' => '\(')
+            final_regex = content
         lexer_code.append(f"        regex = {repr(final_regex)}")
         lexer_code.append("        pattern = re.compile(r'^' + regex)")
         lexer_code.append("        m = pattern.match(input_string[pos:])")
@@ -190,7 +196,10 @@ def generate_lexer_spec(yalex_file_path, output_file):
     lexer_code.append("if __name__ == '__main__':")
     lexer_code.append("    main()")
     lexer_code.append("")
-    lexer_code.append(trailer)
+    if trailer.strip():
+        lexer_code.append('"""')
+        lexer_code.append(trailer)
+        lexer_code.append('"""')
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write("\n".join(lexer_code))
     print(f"Archivo lexer generado: {output_file}")

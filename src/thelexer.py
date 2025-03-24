@@ -50,7 +50,7 @@ def lex(input_string):
                 selected_action = '''return NUMBER'''
 
         # Regla TOKEN_3
-        regex = "';'"
+        regex = ';'
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
         if m:
@@ -61,7 +61,7 @@ def lex(input_string):
                 selected_action = '''return SEMICOLON'''
 
         # Regla TOKEN_4
-        regex = '":="'
+        regex = ':='
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
         if m:
@@ -72,7 +72,7 @@ def lex(input_string):
                 selected_action = '''return ASSIGNOP'''
 
         # Regla TOKEN_5
-        regex = "'<'"
+        regex = '<'
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
         if m:
@@ -83,7 +83,7 @@ def lex(input_string):
                 selected_action = '''return LT'''
 
         # Regla TOKEN_6
-        regex = "'='"
+        regex = '='
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
         if m:
@@ -94,7 +94,7 @@ def lex(input_string):
                 selected_action = '''return EQ'''
 
         # Regla TOKEN_7
-        regex = "'+'"
+        regex = '\\+'
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
         if m:
@@ -105,7 +105,7 @@ def lex(input_string):
                 selected_action = '''return PLUS'''
 
         # Regla TOKEN_8
-        regex = "'-'"
+        regex = '\\-'
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
         if m:
@@ -116,7 +116,7 @@ def lex(input_string):
                 selected_action = '''return MINUS'''
 
         # Regla TOKEN_9
-        regex = "'*'"
+        regex = '\\*'
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
         if m:
@@ -127,7 +127,7 @@ def lex(input_string):
                 selected_action = '''return TIMES'''
 
         # Regla TOKEN_10
-        regex = "'/'"
+        regex = '/'
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
         if m:
@@ -138,7 +138,7 @@ def lex(input_string):
                 selected_action = '''return DIV'''
 
         # Regla TOKEN_11
-        regex = "'('"
+        regex = '\\('
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
         if m:
@@ -149,7 +149,7 @@ def lex(input_string):
                 selected_action = '''return LPAREN'''
 
         # Regla TOKEN_12
-        regex = "')'"
+        regex = '\\)'
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
         if m:
@@ -181,6 +181,7 @@ def main():
 if __name__ == '__main__':
     main()
 
+"""
 return ID }               
   | number    { return NUMBER }
   | ';'       { return SEMICOLON }
@@ -193,3 +194,4 @@ return ID }
   | '/'       { return DIV }
   | '('       { return LPAREN }
   | ')'       { return RPAREN
+"""
