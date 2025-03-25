@@ -28,7 +28,7 @@ def lex(input_string):
                 selected_action = ''''''
 
         # Regla TOKEN_1
-        regex = '([A-Za-z])(([A-Za-z])|(_)*|([0-9]))*'
+        regex = '([A-Za-z])(([A-Za-z])|([0-9]))*'
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
         if m:
@@ -39,61 +39,6 @@ def lex(input_string):
                 selected_action = '''return ID'''
 
         # Regla TOKEN_2
-        regex = "([0-9])+(.([0-9])+)?('E'['+''-']?([0-9])+)?"
-        pattern = re.compile(r'^' + regex)
-        m = pattern.match(input_string[pos:])
-        if m:
-            length = len(m.group(0))
-            if length > max_length:
-                max_length = length
-                selected_token = 'TOKEN_2'
-                selected_action = '''return NUMBER'''
-
-        # Regla TOKEN_3
-        regex = ';'
-        pattern = re.compile(r'^' + regex)
-        m = pattern.match(input_string[pos:])
-        if m:
-            length = len(m.group(0))
-            if length > max_length:
-                max_length = length
-                selected_token = 'TOKEN_3'
-                selected_action = '''return SEMICOLON'''
-
-        # Regla TOKEN_4
-        regex = ':='
-        pattern = re.compile(r'^' + regex)
-        m = pattern.match(input_string[pos:])
-        if m:
-            length = len(m.group(0))
-            if length > max_length:
-                max_length = length
-                selected_token = 'TOKEN_4'
-                selected_action = '''return ASSIGNOP'''
-
-        # Regla TOKEN_5
-        regex = '<'
-        pattern = re.compile(r'^' + regex)
-        m = pattern.match(input_string[pos:])
-        if m:
-            length = len(m.group(0))
-            if length > max_length:
-                max_length = length
-                selected_token = 'TOKEN_5'
-                selected_action = '''return LT'''
-
-        # Regla TOKEN_6
-        regex = '='
-        pattern = re.compile(r'^' + regex)
-        m = pattern.match(input_string[pos:])
-        if m:
-            length = len(m.group(0))
-            if length > max_length:
-                max_length = length
-                selected_token = 'TOKEN_6'
-                selected_action = '''return EQ'''
-
-        # Regla TOKEN_7
         regex = '\\+'
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
@@ -101,21 +46,10 @@ def lex(input_string):
             length = len(m.group(0))
             if length > max_length:
                 max_length = length
-                selected_token = 'TOKEN_7'
+                selected_token = 'TOKEN_2'
                 selected_action = '''return PLUS'''
 
-        # Regla TOKEN_8
-        regex = '\\-'
-        pattern = re.compile(r'^' + regex)
-        m = pattern.match(input_string[pos:])
-        if m:
-            length = len(m.group(0))
-            if length > max_length:
-                max_length = length
-                selected_token = 'TOKEN_8'
-                selected_action = '''return MINUS'''
-
-        # Regla TOKEN_9
+        # Regla TOKEN_3
         regex = '\\*'
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
@@ -123,21 +57,10 @@ def lex(input_string):
             length = len(m.group(0))
             if length > max_length:
                 max_length = length
-                selected_token = 'TOKEN_9'
+                selected_token = 'TOKEN_3'
                 selected_action = '''return TIMES'''
 
-        # Regla TOKEN_10
-        regex = '/'
-        pattern = re.compile(r'^' + regex)
-        m = pattern.match(input_string[pos:])
-        if m:
-            length = len(m.group(0))
-            if length > max_length:
-                max_length = length
-                selected_token = 'TOKEN_10'
-                selected_action = '''return DIV'''
-
-        # Regla TOKEN_11
+        # Regla TOKEN_4
         regex = '\\('
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
@@ -145,10 +68,10 @@ def lex(input_string):
             length = len(m.group(0))
             if length > max_length:
                 max_length = length
-                selected_token = 'TOKEN_11'
+                selected_token = 'TOKEN_4'
                 selected_action = '''return LPAREN'''
 
-        # Regla TOKEN_12
+        # Regla TOKEN_5
         regex = '\\)'
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
@@ -156,7 +79,7 @@ def lex(input_string):
             length = len(m.group(0))
             if length > max_length:
                 max_length = length
-                selected_token = 'TOKEN_12'
+                selected_token = 'TOKEN_5'
                 selected_action = '''return RPAREN'''
 
         if max_length == 0:
@@ -183,15 +106,8 @@ if __name__ == '__main__':
 
 """
 return ID }               
-  | number    { return NUMBER }
-  | ';'       { return SEMICOLON }
-  | ":="      { return ASSIGNOP }
-  | '<'       { return LT }
-  | '='       { return EQ }
   | '+'       { return PLUS }
-  | '-'       { return MINUS }
   | '*'       { return TIMES }
-  | '/'       { return DIV }
   | '('       { return LPAREN }
   | ')'       { return RPAREN
 """
