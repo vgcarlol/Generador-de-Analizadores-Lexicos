@@ -1,9 +1,9 @@
 def is_operand(token: str) -> bool:
-    # Ahora se incluye "_" como posible parte de un operando
     return ((token.startswith("'") and token.endswith("'")) or
             (token.startswith('"') and token.endswith('"')) or
             (token.startswith("[") and token.endswith("]")) or
-            token.isalnum() or token == "_" or token in {")", "*"})
+            token.isalnum() or token == "_" or token in {")", "*", "+", "-", "=", ":"})
+
 
 def can_start_operand(token: str) -> bool:
     # Se permite que "_" inicie un operando
@@ -97,7 +97,7 @@ class RegexParser:
 
     @staticmethod
     def infix_to_postfix(regex: str) -> list:
-        if len(regex) == 1 and regex in {"*", "|", ".", "(", ")"}:
+        if len(regex) == 1 and regex in {"*", "|", ".", "(", ")", "+", "-", "=", ":"}:
             regex = "'" + regex + "'"
         tokens = RegexParser.add_concatenation_operators(regex)
         output = []

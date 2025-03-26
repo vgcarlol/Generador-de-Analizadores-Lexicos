@@ -43,7 +43,9 @@ class DirectAFDConstructor:
             if (symbol.isalnum() or symbol == "#" or symbol == "_" or
                 (symbol.startswith("'") and symbol.endswith("'")) or
                 (symbol.startswith('"') and symbol.endswith('"')) or
-                (symbol.startswith("[") and symbol.endswith("]"))):
+                (symbol.startswith("[") and symbol.endswith("]")) or
+                symbol in {"+", "-", "=", ":", "(", ")"}):
+
                 node = Node(symbol)
                 node.position = position_counter
                 node.firstpos.add(position_counter)
