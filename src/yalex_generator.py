@@ -1,4 +1,3 @@
-import re
 import os
 import sys
 from regex_parser import RegexParser
@@ -6,28 +5,45 @@ from direct_construction import DirectAFDConstructor
 from minimization import AFDMinimizer
 from visualization import visualize_afd, visualize_syntax_tree
 
+# Función para eliminar comentarios delimitados por "(*" y "*)"
 def remove_comments(text):
-    pattern = re.compile(r'\(\*.*?\*\)', re.DOTALL)
-    return re.sub(pattern, '', text)
+    while True:
+        start = text.find("(*")
+        if start == -1:
+            break
+        end = text.find("*)", start + 2)
+        if end == -1:
+            break
+        text = text[:start] + text[end+2:]
+    return text
 
-def parse_yalex_file(file_path):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-    content = remove_comments(content)
-    header = ""
-    header_match = re.search(r'^\s*\{(.*?)\}', content, re.DOTALL)
-    if header_match:
-        header = header_match.group(1).strip()
-    trailer = ""
-    trailer_match = re.search(r'\{(.*?)\}\s*$', content, re.DOTALL)
-    if trailer_match:
-        trailer_candidate = trailer_match.group(1).strip()
-        if ("rule" in trailer_candidate.lower()) or ("let" in trailer_candidate.lower()):
-            trailer = ""
-        else:
-            trailer = trailer_candidate
+# Función para extraer el header (contenido entre llaves al inicio)
+def extract_header(text):
+    stripped = text.lstrip()
+    if stripped.startswith("{"):
+        end = stripped.find("}")
+        if end != -1:
+            return stripped[1:end].strip()
+    return ""
+
+# Función para extraer el trailer (contenido entre llaves al final)
+def extract_trailer(text):
+    text_rstrip = text.rstrip()
+    last_close = text_rstrip.rfind("}")
+    if last_close != -1:
+        last_open = text_rstrip.rfind("{", 0, last_close)
+        if last_open != -1:
+            trailer_candidate = text_rstrip[last_open+1:last_close].strip()
+            if ("rule" in trailer_candidate.lower()) or ("let" in trailer_candidate.lower()):
+                return ""
+            else:
+                return trailer_candidate
+    return ""
+
+# Función para extraer las definiciones (líneas que comienzan con "let ")
+def extract_definitions(text):
     definitions = {}
-    for line in content.splitlines():
+    for line in text.splitlines():
         line = line.strip()
         if line.startswith("let "):
             eq_index = line.find("=")
@@ -35,16 +51,34 @@ def parse_yalex_file(file_path):
                 name = line[4:eq_index].strip()
                 regex_def = line[eq_index+1:].strip()
                 definitions[name] = regex_def
+    return definitions
+
+# Función para extraer el bloque de reglas
+def extract_rules(text):
     rules = []
-    rule_match = re.search(r'rule\s+\w+\s*(\[[^\]]*\])?\s*=(.*?)(?=\n\s*\{|\Z)', content, re.DOTALL | re.IGNORECASE)
-    if rule_match:
-        rule_block = rule_match.group(2).strip()
+    lower = text.lower()
+    rule_index = lower.find("rule")
+    if rule_index != -1:
+        # Se toma desde "rule" hasta que se encuentre una línea que comience con "{" o hasta el final
+        after_rule = text[rule_index:]
+        sep = "\n{"
+        end_index = after_rule.find(sep)
+        if end_index == -1:
+            rule_block = after_rule
+        else:
+            rule_block = after_rule[:end_index]
+        # Se busca el signo "=" que separa la cabecera de la definición
+        eq_index = rule_block.find("=")
+        if eq_index != -1:
+            rule_block = rule_block[eq_index+1:].strip()
+        # Se procesa línea a línea
         lines = [line.strip() for line in rule_block.splitlines() if line.strip()]
         for line in lines:
             if line.startswith("|"):
                 line = line[1:].strip()
-            last_open = line.rfind('{')
-            last_close = line.rfind('}')
+            # Si la línea contiene una acción delimitada por llaves, se separa
+            last_open = line.rfind("{")
+            last_close = line.rfind("}")
             if last_open != -1 and last_close != -1 and last_close > last_open:
                 regex_rule = line[:last_open].strip()
                 action = line[last_open+1:last_close].strip()
@@ -53,13 +87,32 @@ def parse_yalex_file(file_path):
             else:
                 if line:
                     rules.append((line, ""))
-    return header, definitions, rules, trailer
+    return rules
 
+# Función para extraer tokens entre comillas (simula re.findall para ["'([^']*)'", ...])
+def extract_quoted_tokens(inner):
+    tokens = []
+    i = 0
+    while i < len(inner):
+        if inner[i] in ("'", '"'):
+            quote = inner[i]
+            i += 1
+            start = i
+            while i < len(inner) and inner[i] != quote:
+                i += 1
+            token = inner[start:i]
+            tokens.append(token)
+            i += 1
+        else:
+            i += 1
+    return tokens
+
+# Función para convertir una definición de conjunto, similar a convert_set original
 def convert_set(def_str):
     def_str = def_str.strip()
     if def_str.startswith('[') and def_str.endswith(']'):
         inner = def_str[1:-1].strip()
-        tokens = re.findall(r"['\"](.*?)['\"]", inner)
+        tokens = extract_quoted_tokens(inner)
         if tokens:
             if len(tokens) >= 2 and len(tokens) % 2 == 0:
                 ranges = []
@@ -67,15 +120,52 @@ def convert_set(def_str):
                     start = tokens[i]
                     end = tokens[i+1]
                     ranges.append(f"{start}-{end}")
-                return f"[{''.join(ranges)}]"
+                return "[" + "".join(ranges) + "]"
             else:
                 return "[" + "".join(tokens) + "]"
         else:
             return "[" + inner.replace(" ", "") + "]"
     return def_str
 
+# Función para reemplazar ocurrencias de una palabra completa (imitando \b en re)
+def replace_word(text, word, replacement):
+    result = ""
+    i = 0
+    while i < len(text):
+        if text[i:i+len(word)] == word:
+            before = (i == 0) or (not (text[i-1].isalnum() or text[i-1] == '_'))
+            after = (i+len(word) >= len(text)) or (not (text[i+len(word)].isalnum() or text[i+len(word)] == '_'))
+            if before and after:
+                result += replacement
+                i += len(word)
+                continue
+        result += text[i]
+        i += 1
+    return result
+
+# Función para escapar una cadena (imitando re.escape de forma simple)
+def escape_string(s):
+    specials = ".^$*+?{}[]\\|()"
+    escaped = ""
+    for ch in s:
+        if ch in specials:
+            escaped += "\\" + ch
+        else:
+            escaped += ch
+    return escaped
+
+def parse_yalex_file(file_path):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    content = remove_comments(content)
+    header = extract_header(content)
+    trailer = extract_trailer(content)
+    definitions = extract_definitions(content)
+    rules = extract_rules(content)
+    return header, definitions, rules, trailer
+
 def build_afd_for_rule(regex, definitions):
-    # Si la regla coincide exactamente con una definición, reemplazarla
+    # Si la regla coincide exactamente con una definición, se reemplaza
     if regex.strip() in definitions:
         regex = definitions[regex.strip()]
     
@@ -93,19 +183,18 @@ def build_afd_for_rule(regex, definitions):
                     pass
                 else:
                     conv = "'" + conv + "'"
-        # La diferencia respecto a versiones anteriores: si el conv es compuesto (contiene alguno de esos operadores),
-        # se utiliza tal cual sin agregar paréntesis extra.
+        # Si el conv es compuesto, se utiliza tal cual sin agregar paréntesis extra.
         if any(ch in conv for ch in "()*|.?+"):
             replacement = conv
         else:
-            replacement = f"({conv})"
-        pattern = r'\b' + re.escape(name) + r'\b'
-        regex = re.sub(pattern, lambda m: replacement, regex)
+            replacement = "(" + conv + ")"
+        # Reemplazar ocurrencias de la definición en la expresión (buscando coincidencias completas)
+        regex = replace_word(regex, name, replacement)
     
     final_regex = regex.strip()
-    # Obtenemos la lista de tokens en postfix
+    # Obtener la lista de tokens en postfix usando el parser (no se usa re aquí)
     regex_postfix = RegexParser.infix_to_postfix(final_regex)
-    # Para impresión, unimos con espacios:
+    # Para impresión, se unen con espacios:
     postfix_str = " ".join(regex_postfix)
     afd_constructor = DirectAFDConstructor(regex_postfix)
     afd = afd_constructor.get_afd()
@@ -141,6 +230,7 @@ def generate_lexer_spec(yalex_file_path, output_file):
             lexer_code.append("# " + line)
     lexer_code.append("")
     lexer_code.append("import sys")
+    # Nota: en este código generado se sigue utilizando re para compilar las expresiones
     lexer_code.append("import re")
     lexer_code.append("")
     lexer_code.append("def simulate_afd(regex, input_string):")
@@ -160,9 +250,9 @@ def generate_lexer_spec(yalex_file_path, output_file):
         lexer_code.append(f"        # Regla {token_name}")
         # Escapar literales entre comillas simples o dobles para evitar error "unterminated subpattern"
         if (final_regex.startswith("'") and final_regex.endswith("'")) or \
-        (final_regex.startswith('"') and final_regex.endswith('"')):
+           (final_regex.startswith('"') and final_regex.endswith('"')):
             content = final_regex[1:-1]         # quitar las comillas externas
-            content = re.escape(content)        # escapar caracteres especiales (por ejemplo '(' => '\(')
+            content = escape_string(content)
             final_regex = content
         lexer_code.append(f"        regex = {repr(final_regex)}")
         lexer_code.append("        pattern = re.compile(r'^' + regex)")

@@ -105,7 +105,7 @@ def lex(input_string):
                 selected_action = '''return PLUS'''
 
         # Regla TOKEN_8
-        regex = '\\-'
+        regex = '-'
         pattern = re.compile(r'^' + regex)
         m = pattern.match(input_string[pos:])
         if m:
@@ -182,16 +182,5 @@ if __name__ == '__main__':
     main()
 
 """
-return ID }               
-  | number    { return NUMBER }
-  | ';'       { return SEMICOLON }
-  | ":="      { return ASSIGNOP }
-  | '<'       { return LT }
-  | '='       { return EQ }
-  | '+'       { return PLUS }
-  | '-'       { return MINUS }
-  | '*'       { return TIMES }
-  | '/'       { return DIV }
-  | '('       { return LPAREN }
-  | ')'       { return RPAREN
+return RPAREN
 """
