@@ -59,6 +59,7 @@ def extract_rules(text):
     lower = text.lower()
     rule_index = lower.find("rule")
     if rule_index != -1:
+        # Se toma desde "rule" hasta que se encuentre una línea que comience con "{" o hasta el final
         after_rule = text[rule_index:]
         sep = "\n{"
         end_index = after_rule.find(sep)
@@ -66,13 +67,16 @@ def extract_rules(text):
             rule_block = after_rule
         else:
             rule_block = after_rule[:end_index]
+        # Se busca el signo "=" que separa la cabecera de la definición
         eq_index = rule_block.find("=")
         if eq_index != -1:
             rule_block = rule_block[eq_index+1:].strip()
+        # Se procesa línea a línea
         lines = [line.strip() for line in rule_block.splitlines() if line.strip()]
         for line in lines:
             if line.startswith("|"):
                 line = line[1:].strip()
+            # Si la línea contiene una acción delimitada por llaves, se separa
             last_open = line.rfind("{")
             last_close = line.rfind("}")
             if last_open != -1 and last_close != -1 and last_close > last_open:
@@ -85,7 +89,7 @@ def extract_rules(text):
                     rules.append((line, ""))
     return rules
 
-# Función para extraer tokens entre comillas
+# Función para extraer tokens entre comillas (simula re.findall para ["'([^']*)'", ...])
 def extract_quoted_tokens(inner):
     tokens = []
     i = 0
@@ -103,7 +107,7 @@ def extract_quoted_tokens(inner):
             i += 1
     return tokens
 
-# Función para convertir una definición de conjunto
+# Función para convertir una definición de conjunto, similar a convert_set original
 def convert_set(def_str):
     def_str = def_str.strip()
     if def_str.startswith('[') and def_str.endswith(']'):
@@ -123,7 +127,7 @@ def convert_set(def_str):
             return "[" + inner.replace(" ", "") + "]"
     return def_str
 
-# Función para reemplazar ocurrencias de una palabra completa
+# Función para reemplazar ocurrencias de una palabra completa (imitando \b en re)
 def replace_word(text, word, replacement):
     result = ""
     i = 0
@@ -139,7 +143,7 @@ def replace_word(text, word, replacement):
         i += 1
     return result
 
-# Función para escapar una cadena
+# Función para escapar una cadena (imitando re.escape de forma simple)
 def escape_string(s):
     specials = ".^$*+?{}[]\\|()"
     escaped = ""
@@ -160,113 +164,52 @@ def parse_yalex_file(file_path):
     rules = extract_rules(content)
     return header, definitions, rules, trailer
 
-# Serializa el AFD usando claves de tipo cadena
-def serialize_afd(state):
-    visited = {}
-    queue = [state]
-
-    while queue:
-        s = queue.pop(0)
-        sid = str(s.id)
-
-        if sid in visited:
-            continue
-
-        visited[sid] = {
-            "is_final": s.is_final,
-            "transitions": {}
-        }
-
-        for sym, target in s.transitions.items():
-            if sym is not None and sym != "":
-                visited[sid]["transitions"][sym] = str(target.id)
-
-                if str(target.id) not in visited:
-                    queue.append(target)
-
-    return {"start": str(state.id), "states": visited}
-
-
-
 def build_afd_for_rule(regex, definitions):
-    # Si la regla coincide con una definición, reemplazarla
+    # Si la regla coincide exactamente con una definición, se reemplaza
     if regex.strip() in definitions:
         regex = definitions[regex.strip()]
-
-    # Reemplazar referencias a definiciones en la expresión regular
+    
+    # Procesar las definiciones en orden descendente (por longitud)
     for name in sorted(definitions, key=len, reverse=True):
         def_regex = definitions[name]
         conv = def_regex
         if def_regex.startswith('[') and def_regex.endswith(']'):
             conv = convert_set(def_regex)
         else:
-            if not ((conv.startswith("'") and conv.endswith("'")) or 
-                    (conv.startswith('"') and conv.endswith('"'))):
+            # Si no está ya entre comillas, y si no es compuesta (contiene operadores),
+            # se envuelve en comillas; de lo contrario se deja tal cual.
+            if not ((conv.startswith("'") and conv.endswith("'")) or (conv.startswith('"') and conv.endswith('"'))):
                 if any(ch in conv for ch in "()*|.?+"):
                     pass
                 else:
                     conv = "'" + conv + "'"
-
-        regex = replace_word(regex, name, conv)
-
-    # Convertir la expresión a postfix y construir el AFD
+        # Si el conv es compuesto, se utiliza tal cual sin agregar paréntesis extra.
+        if any(ch in conv for ch in "()*|.?+"):
+            replacement = conv
+        else:
+            replacement = "(" + conv + ")"
+        # Reemplazar ocurrencias de la definición en la expresión (buscando coincidencias completas)
+        regex = replace_word(regex, name, replacement)
+    
     final_regex = regex.strip()
+    # Obtener la lista de tokens en postfix usando el parser (no se usa re aquí)
     regex_postfix = RegexParser.infix_to_postfix(final_regex)
+    # Para impresión, se unen con espacios:
+    postfix_str = " ".join(regex_postfix)
     afd_constructor = DirectAFDConstructor(regex_postfix)
     afd = afd_constructor.get_afd()
-
-    # 🔥 Agregar un print para depuración
-    print(f"\n✅ Generando AFD para: {final_regex}")
-    print(f"Postfix: {' '.join(regex_postfix)}")
-    print(f"Estados del AFD:")
-    for state in afd_constructor.get_afd().transitions:
-        print(f"  {state}: {afd_constructor.get_afd().transitions[state]}")
-
-    return afd, final_regex, regex_postfix, afd_constructor.symbol_positions, afd_constructor.syntax_tree
-
-
-# matches_symbol actualizado para cubrir varios casos
-def matches_symbol(sym, ch):
-    sym = sym.strip()
-
-    if sym.startswith("'") and sym.endswith("'"):
-        sym = sym[1:-1]
-
-    if sym.startswith("[") and sym.endswith("]"):
-        return ch in sym[1:-1]
-
-    if sym.startswith("\\"):
-        sym = sym[1:]
-
-    if sym in {"+", "-", "=", "(", ")"}:
-        return ch == sym  # 🔥 Compara directamente
-
-    return ch == sym
-
-
-# Función para simular el AFD y obtener la longitud del prefijo aceptado.
-def simulate_afd_longest(afd_dict, input_string):
-    current = afd_dict['start']
-    states = afd_dict['states']
-    last_accepted = -1
-    pos = 0
-    print(f"Probando: {input_string}")
-    print(f"Estado inicial: {current}")
-    while pos < len(input_string):
-        ch = input_string[pos]
-        transition_found = False
-        # Itera sobre las transiciones del estado actual.
-        for sym, target in states[current]['transitions'].items():
-            if matches_symbol(sym, ch):
-                current = target
-                pos += 1
-                transition_found = True
-                if states[current]['is_final']:
-                    last_accepted = pos
-                break
-        if not transition_found:
-            break
-    return last_accepted if last_accepted != -1 else 0
+    minimized_afd = AFDMinimizer(afd).minimize()
+    
+    print("\n===================================")
+    print("Expresión final:")
+    print(final_regex)
+    print("\nPostfix generado:")
+    print(postfix_str)
+    print("\nMapping de marcadores:")
+    print(afd_constructor.symbol_positions)
+    print("===================================\n")
+    
+    return minimized_afd, final_regex, postfix_str, afd_constructor.symbol_positions, afd_constructor.syntax_tree
 
 def generate_lexer_spec(yalex_file_path, output_file):
     header, definitions, rules, trailer = parse_yalex_file(yalex_file_path)
@@ -279,8 +222,7 @@ def generate_lexer_spec(yalex_file_path, output_file):
     for idx, (regex_rule, action) in enumerate(rules):
         token_name = f"TOKEN_{idx}"
         afd, final_regex, regex_postfix, mapping, syntax_tree = build_afd_for_rule(regex_rule, definitions)
-        serialized_afd = serialize_afd(afd)
-        rule_info.append((token_name, serialized_afd, action, final_regex, regex_postfix, mapping, syntax_tree))
+        rule_info.append((token_name, afd, action, final_regex, regex_postfix, mapping, syntax_tree))
     lexer_code = []
     lexer_code.append("# Archivo generado automáticamente por YALex Generator")
     if header:
@@ -288,49 +230,13 @@ def generate_lexer_spec(yalex_file_path, output_file):
             lexer_code.append("# " + line)
     lexer_code.append("")
     lexer_code.append("import sys")
+    # Nota: en este código generado se sigue utilizando re para compilar las expresiones
+    lexer_code.append("import re")
     lexer_code.append("")
-    # Se incluye la definición de matches_symbol y simulate_afd_longest en el código generado.
-    lexer_code.append("def matches_symbol(sym, ch):")
-    lexer_code.append("    if len(sym) == 1:")
-    lexer_code.append("        return ch == sym")
-    lexer_code.append("    if (sym.startswith(\"'\") and sym.endswith(\"'\")) or (sym.startswith('\"') and sym.endswith('\"')):")
-    lexer_code.append("        return ch == sym[1:-1]")
-    lexer_code.append("    if sym.startswith('\\\\'):")
-    lexer_code.append("        return ch == sym[1:]")
-    lexer_code.append("    if sym.startswith('[') and sym.endswith(']'):")
-    lexer_code.append("        content = sym[1:-1]")
-    lexer_code.append("        i = 0")
-    lexer_code.append("        while i < len(content):")
-    lexer_code.append("            if i + 2 < len(content) and content[i+1] == '-':")
-    lexer_code.append("                if content[i] <= ch <= content[i+2]:")
-    lexer_code.append("                    return True")
-    lexer_code.append("                i += 3")
-    lexer_code.append("            else:")
-    lexer_code.append("                if content[i] == ch:")
-    lexer_code.append("                    return True")
-    lexer_code.append("                i += 1")
-    lexer_code.append("        return False")
-    lexer_code.append("    return ch == sym")
-    lexer_code.append("")
-    lexer_code.append("def simulate_afd_longest(afd_dict, input_string):")
-    lexer_code.append("    current = afd_dict['start']")
-    lexer_code.append("    states = afd_dict['states']")
-    lexer_code.append("    last_accepted = -1")
-    lexer_code.append("    pos = 0")
-    lexer_code.append("    while pos < len(input_string):")
-    lexer_code.append("        ch = input_string[pos]")
-    lexer_code.append("        transition_found = False")
-    lexer_code.append("        for sym, target in states[current]['transitions'].items():")
-    lexer_code.append("            if matches_symbol(sym, ch):")
-    lexer_code.append("                current = target")
-    lexer_code.append("                pos += 1")
-    lexer_code.append("                transition_found = True")
-    lexer_code.append("                if states[current]['is_final']:")
-    lexer_code.append("                    last_accepted = pos")
-    lexer_code.append("                break")
-    lexer_code.append("        if not transition_found:")
-    lexer_code.append("            break")
-    lexer_code.append("    return last_accepted if last_accepted != -1 else 0")
+    lexer_code.append("def simulate_afd(regex, input_string):")
+    lexer_code.append("    pattern = re.compile(r'^' + regex)")
+    lexer_code.append("    m = pattern.match(input_string)")
+    lexer_code.append("    return len(m.group(0)) if m else 0")
     lexer_code.append("")
     lexer_code.append("def lex(input_string):")
     lexer_code.append("    tokens = []")
@@ -340,14 +246,23 @@ def generate_lexer_spec(yalex_file_path, output_file):
     lexer_code.append("        selected_token = None")
     lexer_code.append("        selected_action = None")
     lexer_code.append("        # Evaluar cada regla (longest match + prioridad)")
-    for token_name, serialized_afd, action, final_regex, regex_postfix, mapping, syntax_tree in rule_info:
+    for token_name, afd, action, final_regex, regex_postfix, mapping, syntax_tree in rule_info:
         lexer_code.append(f"        # Regla {token_name}")
-        lexer_code.append(f"        afd_{token_name} = {repr(serialized_afd)}")
-        lexer_code.append(f"        length = simulate_afd_longest(afd_{token_name}, input_string[pos:])")
-        lexer_code.append("        if length > max_length:")
-        lexer_code.append(f"            max_length = length")
-        lexer_code.append(f"            selected_token = '{token_name}'")
-        lexer_code.append(f"            selected_action = '''{action}'''")
+        # Escapar literales entre comillas simples o dobles para evitar error "unterminated subpattern"
+        if (final_regex.startswith("'") and final_regex.endswith("'")) or \
+           (final_regex.startswith('"') and final_regex.endswith('"')):
+            content = final_regex[1:-1]         # quitar las comillas externas
+            content = escape_string(content)
+            final_regex = content
+        lexer_code.append(f"        regex = {repr(final_regex)}")
+        lexer_code.append("        pattern = re.compile(r'^' + regex)")
+        lexer_code.append("        m = pattern.match(input_string[pos:])")
+        lexer_code.append("        if m:")
+        lexer_code.append("            length = len(m.group(0))")
+        lexer_code.append("            if length > max_length:")
+        lexer_code.append(f"                max_length = length")
+        lexer_code.append(f"                selected_token = '{token_name}'")
+        lexer_code.append(f"                selected_action = '''{action}'''")
         lexer_code.append("")
     lexer_code.append("        if max_length == 0:")
     lexer_code.append("            print(f'Error léxico en la posición {pos}: {input_string[pos]}')")
@@ -378,6 +293,7 @@ def generate_lexer_spec(yalex_file_path, output_file):
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write("\n".join(lexer_code))
     print(f"Archivo lexer generado: {output_file}")
+    from visualization import visualize_syntax_tree
     output_folder = "syntax_trees"
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
