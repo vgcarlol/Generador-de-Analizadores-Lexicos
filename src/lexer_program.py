@@ -222,6 +222,6 @@ if __name__ == "__main__":
 
     with open("./salidas/random_data_3.txt", "w", encoding="utf-8") as f:
         for token, lexema in resultado:
-            f.write(f"{token}: '{lexema}'\n")
+            f.write(f"Token: {token}, Lexema: '{lexema}'\n")
 
     print("✅ Análisis completado. Revisa 'output.txt'.")
