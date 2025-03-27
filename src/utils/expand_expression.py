@@ -1,6 +1,6 @@
 # utils/expand_expression.py
 
-SPECIAL_OPERATORS = {'+', '?', '*', '(', ')', '|', '.', '\\', '-', '[', ']', '{', '}'}
+SPECIAL_OPERATORS = {'+', '?', '*', '(', ')', '|', '.', '\\', '-', '[', ']'}
 
 
 def is_boundary(ch):
@@ -52,23 +52,30 @@ def expand_ranges(expr):
             if j >= len(expr):
                 result += expr[i:]
                 break
-            content = expr[i+1:j].replace("'", "")
+            content = expr[i+1:j]
+            content = content.replace("'", "")
 
             expanded = []
-            k = 0  # Asegúrate de que 'k' siempre esté inicializado
+            k = 0
             while k < len(content):
-                if k + 2 < len(content) and content[k + 1] == '-':  # Verifica si hay un rango
-                    for c in range(ord(content[k]), ord(content[k + 2]) + 1):
+                if content[k] == '\\' and k+1 < len(content):
+                    expanded.append(f"\\{content[k+1]}")
+                    k += 2
+                elif k+2 < len(content) and content[k+1] == '-':
+                    for c in range(ord(content[k]), ord(content[k+2]) + 1):
                         ch = chr(c)
-                        expanded.append(f"\\{ch}" if ch in SPECIAL_OPERATORS or ch.isspace() else ch)
-                    k += 3  # Aumentamos 'k' después de procesar el rango
+                        expanded.append(f"\\{ch}" if ch in SPECIAL_OPERATORS or ch == ' ' else ch)
+                    k += 3
                 else:
                     ch = content[k]
-                    expanded.append(f"\\{ch}" if ch in SPECIAL_OPERATORS or ch.isspace() else ch)
-                    k += 1  # Aumentamos 'k' normalmente
-            joined = '|'.join(expanded)  # Unimos todas las opciones del rango
+                    if ch == ' ':
+                        expanded.append("\\s")
+                    else:
+                        expanded.append(f"\\{ch}" if ch in SPECIAL_OPERATORS else ch)
+                    k += 1
+            joined = '|'.join(expanded)
             result += '(' + joined + ')'
-            i = j + 1  # Continuamos después del corchete de cierre ']'
+            i = j + 1
         else:
             result += expr[i]
             i += 1
@@ -76,18 +83,19 @@ def expand_ranges(expr):
     return result
 
 
-
 def escape_literals(expr):
     result = ""
     i = 0
     while i < len(expr):
+        if expr[i] == '"':
+            i += 1
+            continue
         if expr[i] == "'":
             j = i + 1
             literal = ""
             while j < len(expr) and expr[j] != "'":
-                if expr[j] == '\\' and j + 1 < len(expr):
+                if expr[j] == '\\' and j+1 < len(expr):
                     esc = expr[j+1]
-                    # Asegurarse de que todos los caracteres de escape sean correctamente procesados
                     if esc == 'n':
                         literal += '\\n'
                     elif esc == 't':
@@ -104,18 +112,23 @@ def escape_literals(expr):
                 else:
                     if expr[j] == ' ':
                         literal += '\\s'
-                    elif expr[j] in SPECIAL_OPERATORS or not expr[j].isalnum():
-                        literal += '\\' + expr[j]
                     else:
                         literal += expr[j]
                     j += 1
-            result += literal
+            if literal:
+                result += ''.join([
+                    f"\\{ch}" if ch in SPECIAL_OPERATORS or not ch.isalnum() else ch
+                    for ch in literal
+                ])
             i = j + 1
         else:
-            result += expr[i]
+            if expr[i] == ' ':
+                result += '\\s'
+            else:
+                result += expr[i]
             i += 1
+    print(f"[LOG] Después de escape_literals: {result}")
     return result
-
 
 
 def extract_last_operand(result):
@@ -137,8 +150,7 @@ def convert_plus(expr):
     while i < len(expr):
         if expr[i] == '+' and (i == 0 or expr[i-1] != '\\'):
             operand, prefix = extract_last_operand(result)
-            wrapped = f"({operand})" if not operand.startswith('(') else operand
-            result = prefix + wrapped + f"{wrapped}*"
+            result = prefix + operand + f"({operand})*"
             i += 1
         else:
             result += expr[i]
@@ -153,8 +165,7 @@ def convert_optional(expr):
     while i < len(expr):
         if expr[i] == '?' and (i == 0 or expr[i-1] != '\\'):
             operand, prefix = extract_last_operand(result)
-            wrapped = f"({operand})" if not operand.startswith('(') else operand
-            result = prefix + f"({wrapped}|ε)"
+            result = prefix + f"({operand}|ε)"
             i += 1
         else:
             result += expr[i]
