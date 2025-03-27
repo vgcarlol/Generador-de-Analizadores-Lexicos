@@ -1,9 +1,11 @@
 # utils/expand_expression.py
 
-SPECIAL_OPERATORS = {'+', '?', '*', '(', ')', '|', '.', '\\', '-'}
+SPECIAL_OPERATORS = {'+', '?', '*', '(', ')', '|', '.', '\\', '-', '[', ']'}
+
 
 def is_boundary(ch):
     return not (ch.isalnum() or ch == '_')
+
 
 def replace_whole_word(s, word, replacement):
     result = ""
@@ -20,6 +22,7 @@ def replace_whole_word(s, word, replacement):
         i += 1
     return result
 
+
 def expand_lets(expr, definitions):
     changed = True
     max_depth = 10
@@ -29,14 +32,14 @@ def expand_lets(expr, definitions):
         for ident, rule in definitions.items():
             if ident == rule:
                 continue
-            pattern = f"({rule})"
-            new_expr = replace_whole_word(expr, ident, pattern)
+            new_expr = replace_whole_word(expr, ident, rule)
             if new_expr != expr:
                 expr = new_expr
                 changed = True
         depth += 1
     print(f"[LOG] Después de expand_lets: {expr}")
     return expr
+
 
 def expand_ranges(expr):
     result = ""
@@ -61,20 +64,24 @@ def expand_ranges(expr):
                 elif k+2 < len(content) and content[k+1] == '-':
                     for c in range(ord(content[k]), ord(content[k+2]) + 1):
                         ch = chr(c)
-                        expanded.append(f"\\{ch}" if ch in SPECIAL_OPERATORS else ch)
+                        expanded.append(f"\\{ch}" if ch in SPECIAL_OPERATORS or ch == ' ' else ch)
                     k += 3
                 else:
                     ch = content[k]
-                    expanded.append(f"\\{ch}" if ch in SPECIAL_OPERATORS else ch)
+                    if ch == ' ':
+                        expanded.append("\\s")
+                    else:
+                        expanded.append(f"\\{ch}" if ch in SPECIAL_OPERATORS else ch)
                     k += 1
             joined = '|'.join(expanded)
-            result += '(' + joined + ')'  # agrupación segura sin comillas
+            result += '(' + joined + ')'
             i = j + 1
         else:
             result += expr[i]
             i += 1
     print(f"[LOG] Después de expand_ranges: {result}")
     return result
+
 
 def escape_literals(expr):
     result = ""
@@ -97,23 +104,32 @@ def escape_literals(expr):
                         literal += '\\r'
                     elif esc == '\\':
                         literal += '\\\\'
+                    elif esc == ' ':
+                        literal += '\\s'
                     else:
                         literal += '\\' + esc
                     j += 2
                 else:
-                    literal += expr[j]
+                    if expr[j] == ' ':
+                        literal += '\\s'
+                    else:
+                        literal += expr[j]
                     j += 1
             if literal:
-                result += '|'.join([
+                result += ''.join([
                     f"\\{ch}" if ch in SPECIAL_OPERATORS or not ch.isalnum() else ch
                     for ch in literal
                 ])
             i = j + 1
         else:
-            result += expr[i]
+            if expr[i] == ' ':
+                result += '\\s'
+            else:
+                result += expr[i]
             i += 1
     print(f"[LOG] Después de escape_literals: {result}")
     return result
+
 
 def extract_last_operand(result):
     if result and result[-1] == ')':
@@ -126,6 +142,7 @@ def extract_last_operand(result):
                 return result[j:], result[:j]
             j -= 1
     return result[-1], result[:-1]
+
 
 def convert_plus(expr):
     result = ""
@@ -141,6 +158,7 @@ def convert_plus(expr):
     print(f"[LOG] Después de convert_plus: {result}")
     return result
 
+
 def convert_optional(expr):
     result = ""
     i = 0
@@ -155,6 +173,7 @@ def convert_optional(expr):
     print(f"[LOG] Después de convert_optional: {result}")
     return result
 
+
 def simplify_parens(expr):
     while expr.startswith('(') and expr.endswith(')'):
         count = 0
@@ -168,18 +187,16 @@ def simplify_parens(expr):
     print(f"[LOG] Después de simplify_parens: {expr}")
     return expr
 
+
 def expand_expression(expr, definitions):
-    expr = expand_lets(expr, definitions)     # Expande `digit` -> ['0'-'9']
-    expr = expand_ranges(expr)                # Expande ['0'-'9'] -> (0|1|2|...|9)
-    expr = escape_literals(expr)              # Procesa strings tipo '\n', etc.
-    expr = expr.replace(' ', '\\s')           # Reemplazo opcional de espacio
-
-    # ❗ Estos deben ir **después** de expandir todo lo anterior
-    expr = convert_plus(expr)                 # Convierte + a repeticiones
-    expr = convert_optional(expr)             # Convierte ? a opcional
-
+    expr = escape_literals(expr)
+    expr = expand_lets(expr, definitions)
+    expr = expand_ranges(expr)
+    expr = convert_plus(expr)
+    expr = convert_optional(expr)
     expr = simplify_parens(expr)
-    expr = expr.strip('|')                    # Limpieza
+
+    expr = expr.strip('|')
 
     if not validar_parentesis_balanceados(expr):
         raise ValueError(f"❌ Paréntesis no balanceados en expresión final: {expr}")
