@@ -58,11 +58,20 @@ def analizar_cadena(cadena):
 
 
 if __name__ == "__main__":
-    entrada = input("📝 Ingresa una cadena para analizar: ")
+    try:
+        with open("input.txt", "r", encoding="utf-8") as f:
+            entrada = f.read()
+    except FileNotFoundError:
+        print("❌ No se encontró el archivo 'input.txt'")
+        exit(1)
+
     resultado = analizar_cadena(entrada)
-    print("\\n📍 Tokens encontrados:")
-    for token, lexema in resultado:
-        print(f"  - {{token}}: '{{lexema}}'")
+
+    with open("output.txt", "w", encoding="utf-8") as f:
+        for token, lexema in resultado:
+            f.write(f"{{token}}: '{{lexema}}'\\n")
+
+    print("✅ Análisis completado. Revisa 'output.txt'.")
 '''
 
     return lexer_code

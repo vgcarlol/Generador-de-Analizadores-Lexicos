@@ -106,7 +106,7 @@ def simular_afd(afd, entrada):
 
 # Ejemplo de ejecución:
 if __name__ == "__main__":
-    yal_file = "./yal/slr-3.yal"  # Cambia esto si es necesario
+    yal_file = "./yal/slr-4.yal"  # Cambia esto si es necesario
 
     # Intentamos cargar los AFDs desde un archivo pickle
     afds = load_afds_from_pickle()

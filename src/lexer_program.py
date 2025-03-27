@@ -25,6 +25,73 @@ AFDS = {
         ('S5', 'm'): 'S5'
     }
     },
+    'ter': {
+        'states': ['S0', 'S1'],
+        'start': 'S0',
+        'accepting': ['S1'],
+        'transitions': {
+        ('S0', 'A'): 'S1',
+        ('S0', 'B'): 'S1',
+        ('S0', 'C'): 'S1',
+        ('S0', 'D'): 'S1',
+        ('S0', 'E'): 'S1',
+        ('S0', 'F'): 'S1',
+        ('S0', 'G'): 'S1',
+        ('S0', 'H'): 'S1',
+        ('S0', 'I'): 'S1',
+        ('S0', 'J'): 'S1',
+        ('S0', 'K'): 'S1',
+        ('S0', 'L'): 'S1',
+        ('S0', 'M'): 'S1',
+        ('S0', 'N'): 'S1',
+        ('S0', 'O'): 'S1',
+        ('S0', 'P'): 'S1',
+        ('S0', 'Q'): 'S1',
+        ('S0', 'R'): 'S1',
+        ('S0', 'S'): 'S1',
+        ('S0', 'T'): 'S1',
+        ('S0', 'U'): 'S1',
+        ('S0', 'V'): 'S1',
+        ('S0', 'W'): 'S1',
+        ('S0', 'X'): 'S1',
+        ('S0', 'Y'): 'S1',
+        ('S0', 'Z'): 'S1',
+        ('S0', 'a'): 'S1',
+        ('S0', 'b'): 'S1',
+        ('S0', 'c'): 'S1',
+        ('S0', 'd'): 'S1',
+        ('S0', 'e'): 'S1',
+        ('S0', 'f'): 'S1',
+        ('S0', 'g'): 'S1',
+        ('S0', 'h'): 'S1',
+        ('S0', 'i'): 'S1',
+        ('S0', 'j'): 'S1',
+        ('S0', 'k'): 'S1',
+        ('S0', 'l'): 'S1',
+        ('S0', 'm'): 'S1',
+        ('S0', 'n'): 'S1',
+        ('S0', 'o'): 'S1',
+        ('S0', 'p'): 'S1',
+        ('S0', 'q'): 'S1',
+        ('S0', 'r'): 'S1',
+        ('S0', 's'): 'S1',
+        ('S0', 't'): 'S1',
+        ('S0', 'u'): 'S1',
+        ('S0', 'v'): 'S1',
+        ('S0', 'w'): 'S1',
+        ('S0', 'x'): 'S1',
+        ('S0', 'y'): 'S1',
+        ('S0', 'z'): 'S1'
+    }
+    },
+    'str': {
+        'states': ['S0'],
+        'start': 'S0',
+        'accepting': ['S0'],
+        'transitions': {
+        ('S0', '_'): 'S0'
+    }
+    },
     'digit': {
         'states': ['S0', 'S1'],
         'start': 'S0',
@@ -53,6 +120,27 @@ AFDS = {
         ('S3', 'i'): 'S4',
         ('S4', 't'): 'S5',
         ('S5', 't'): 'S5'
+    }
+    },
+    'id': {
+        'states': ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11'],
+        'start': 'S0',
+        'accepting': ['S3'],
+        'transitions': {
+        ('S0', 't'): 'S1',
+        ('S1', 'e'): 'S2',
+        ('S2', 'r'): 'S3',
+        ('S3', 'd'): 'S4',
+        ('S3', 't'): 'S5',
+        ('S3', 's'): 'S6',
+        ('S4', 'i'): 'S7',
+        ('S5', 'e'): 'S8',
+        ('S6', 't'): 'S9',
+        ('S7', 'g'): 'S10',
+        ('S8', 'r'): 'S3',
+        ('S9', 'r'): 'S3',
+        ('S10', 'i'): 'S11',
+        ('S11', 't'): 'S3'
     }
     },
     'number': {
@@ -122,8 +210,17 @@ def analizar_cadena(cadena):
 
 
 if __name__ == "__main__":
-    entrada = input("📝 Ingresa una cadena para analizar: ")
+    try:
+        with open("./entradas/random_data_2.txt", "r", encoding="utf-8") as f:
+            entrada = f.read()
+    except FileNotFoundError:
+        print("❌ No se encontró el archivo 'input.txt'")
+        exit(1)
+
     resultado = analizar_cadena(entrada)
-    print("\n📍 Tokens encontrados:")
-    for token, lexema in resultado:
-        print(f"  - {token}: '{lexema}'")
+
+    with open("output.txt", "w", encoding="utf-8") as f:
+        for token, lexema in resultado:
+            f.write(f"{token}: '{lexema}'\n")
+
+    print("✅ Análisis completado. Revisa 'output.txt'.")
