@@ -7,7 +7,7 @@ from utils.expand_expression import expand_expression
 from utils.lexer_generator import generar_lexer_program
 from utils.regex_postfix import to_postfix, graficar_arbol
 from utils.syntax_tree.build_tree import build_syntax_tree
-from utils.syntax_tree.afd_from_tree import construct_direct_afd
+from utils.syntax_tree.afd_from_tree import construct_direct_afd, visualize_afd, export_afd_to_json
 
 
 # Paso 1: Parsear el archivo YAL y separar definiciones y tokens
@@ -69,6 +69,14 @@ def generar_afds(yal_path):
         graficar_arbol(syntax_tree, filename=f"tree_{token}")
 
         afd = construct_direct_afd(syntax_tree, pos_to_symbol)
+        
+        
+        # Visualizamos el AFD con Graphviz (opcional)
+        visualize_afd(afd, output_path=f"./../../Graphviz/afd_{token}.gv")
+
+        # Guardamos una copia en JSON (opcional)
+        export_afd_to_json(afd, filename=f"afd_{token}.json")
+
         afds[token] = afd
 
     return afds

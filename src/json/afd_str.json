@@ -1,0 +1,12 @@
+{
+    "states": [
+        "S0"
+    ],
+    "start": "S0",
+    "accepting": [
+        "S0"
+    ],
+    "transitions": {
+        "S0,_": "S0"
+    }
+}

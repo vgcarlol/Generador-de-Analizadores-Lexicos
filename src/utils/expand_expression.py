@@ -169,16 +169,17 @@ def simplify_parens(expr):
     return expr
 
 def expand_expression(expr, definitions):
-    expr = expand_lets(expr, definitions)
-    expr = expand_ranges(expr)
-    expr = escape_literals(expr)
-    expr = expr.replace(' ', '\\s')  # opcional
-    expr = convert_plus(expr)
-    expr = convert_optional(expr)
-    expr = simplify_parens(expr)
+    expr = expand_lets(expr, definitions)     # Expande `digit` -> ['0'-'9']
+    expr = expand_ranges(expr)                # Expande ['0'-'9'] -> (0|1|2|...|9)
+    expr = escape_literals(expr)              # Procesa strings tipo '\n', etc.
+    expr = expr.replace(' ', '\\s')           # Reemplazo opcional de espacio
 
-    # Validación extra para evitar | mal colocado
-    expr = expr.strip('|')  # Evitar '|' al inicio o final
+    # ❗ Estos deben ir **después** de expandir todo lo anterior
+    expr = convert_plus(expr)                 # Convierte + a repeticiones
+    expr = convert_optional(expr)             # Convierte ? a opcional
+
+    expr = simplify_parens(expr)
+    expr = expr.strip('|')                    # Limpieza
 
     if not validar_parentesis_balanceados(expr):
         raise ValueError(f"❌ Paréntesis no balanceados en expresión final: {expr}")
