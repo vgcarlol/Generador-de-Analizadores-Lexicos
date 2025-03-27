@@ -2,10 +2,8 @@
 
 SPECIAL_OPERATORS = {'+', '?', '*', '(', ')', '|', '.', '\\'}
 
-
 def is_boundary(ch):
     return not (ch.isalnum() or ch == '_')
-
 
 def replace_whole_word(s, word, replacement):
     result = ""
@@ -22,7 +20,6 @@ def replace_whole_word(s, word, replacement):
         i += 1
     return result
 
-
 def expand_lets(expr, definitions):
     changed = True
     while changed:
@@ -32,8 +29,8 @@ def expand_lets(expr, definitions):
             if new_expr != expr:
                 expr = new_expr
                 changed = True
+    print(f"[LOG] Después de expand_lets: {expr}")
     return expr
-
 
 def expand_ranges(expr):
     result = ""
@@ -47,24 +44,30 @@ def expand_ranges(expr):
                 result += expr[i:]
                 break
             content = expr[i+1:j]
-            content = content.replace("'", "")  # quitar comillas simples
+            content = content.replace("'", "")
+
             expanded = []
             k = 0
             while k < len(content):
-                if k+2 < len(content) and content[k+1] == '-':
-                    for c in range(ord(content[k]), ord(content[k+2])+1):
-                        expanded.append(chr(c))
+                if content[k] == '\\' and k+1 < len(content):
+                    expanded.append(f"\\{content[k+1]}")
+                    k += 2
+                elif k+2 < len(content) and content[k+1] == '-':
+                    for c in range(ord(content[k]), ord(content[k+2]) + 1):
+                        ch = chr(c)
+                        expanded.append(f"\\{ch}" if ch in SPECIAL_OPERATORS else ch)
                     k += 3
                 else:
-                    expanded.append(content[k])
+                    ch = content[k]
+                    expanded.append(f"\\{ch}" if ch in SPECIAL_OPERATORS else ch)
                     k += 1
             result += '(' + '|'.join(expanded) + ')'
             i = j + 1
         else:
             result += expr[i]
             i += 1
+    print(f"[LOG] Después de expand_ranges: {result}")
     return result
-
 
 def escape_literals(expr):
     result = ""
@@ -75,22 +78,31 @@ def escape_literals(expr):
             literal = ""
             while j < len(expr) and expr[j] != "'":
                 if expr[j] == '\\' and j+1 < len(expr):
-                    literal += expr[j] + expr[j+1]
+                    esc = expr[j+1]
+                    if esc == 'n':
+                        literal += '\\n'
+                    elif esc == 't':
+                        literal += '\\t'
+                    elif esc == 'r':
+                        literal += '\\r'
+                    elif esc == '\\':
+                        literal += '\\\\'
+                    else:
+                        literal += '\\' + esc
                     j += 2
                 else:
                     literal += expr[j]
                     j += 1
-            for ch in literal:
-                if ch in SPECIAL_OPERATORS:
-                    result += '\\' + ch
-                else:
-                    result += ch
+            if literal == "":
+                result += ""
+            else:
+                result += '|'.join([f"\\{ch}" if ch in SPECIAL_OPERATORS or not ch.isalnum() else ch for ch in literal])
             i = j + 1
         else:
             result += expr[i]
             i += 1
+    print(f"[LOG] Después de escape_literals: {result}")
     return result
-
 
 def extract_last_operand(result):
     if result and result[-1] == ')':
@@ -104,7 +116,6 @@ def extract_last_operand(result):
             j -= 1
     return result[-1], result[:-1]
 
-
 def convert_plus(expr):
     result = ""
     i = 0
@@ -116,8 +127,8 @@ def convert_plus(expr):
         else:
             result += expr[i]
             i += 1
+    print(f"[LOG] Después de convert_plus: {result}")
     return result
-
 
 def convert_optional(expr):
     result = ""
@@ -125,13 +136,14 @@ def convert_optional(expr):
     while i < len(expr):
         if expr[i] == '?' and (i == 0 or expr[i-1] != '\\'):
             operand, prefix = extract_last_operand(result)
-            result = prefix + f"({operand}|ε)"
+            result = prefix + f"({operand})|("
+            result += ")"  # cerrar el grupo de alternativa
             i += 1
         else:
             result += expr[i]
             i += 1
+    print(f"[LOG] Después de convert_optional: {result}")
     return result
-
 
 def simplify_parens(expr):
     while expr.startswith('(') and expr.endswith(')'):
@@ -140,10 +152,11 @@ def simplify_parens(expr):
             if expr[i] == '(': count += 1
             elif expr[i] == ')': count -= 1
             if count == 0 and i != len(expr) - 1:
+                print(f"[LOG] Después de simplify_parens: {expr}")
                 return expr
         expr = expr[1:-1]
+    print(f"[LOG] Después de simplify_parens: {expr}")
     return expr
-
 
 def expand_expression(expr, definitions):
     expr = expand_lets(expr, definitions)
@@ -152,4 +165,6 @@ def expand_expression(expr, definitions):
     expr = convert_plus(expr)
     expr = convert_optional(expr)
     expr = simplify_parens(expr)
+
+    print(f"[LOG] Final expression: {expr}")
     return expr

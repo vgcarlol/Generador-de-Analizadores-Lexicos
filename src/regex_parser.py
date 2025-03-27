@@ -75,3 +75,39 @@ def to_postfix(expr):
             i += 1
 
     return tokens
+
+
+# ----------------------------
+# 🔧 FUNCIONALIDAD EXTRA: GRAFICAR ÁRBOL
+# ----------------------------
+
+def graficar_arbol(node, filename="syntax_tree"):
+    from graphviz import Digraph
+
+    dot = Digraph(comment="Árbol de Sintaxis")
+
+    def recorrer(nodo):
+        if nodo is None:
+            return "None"
+
+        # ID único para el nodo
+        node_id = str(id(nodo))
+        label = nodo.symbol if nodo.symbol else ""
+        if nodo.position is not None:
+            label += f"\n[{nodo.position}]"
+
+        dot.node(node_id, label)
+
+        if nodo.left:
+            left_id = recorrer(nodo.left)
+            dot.edge(node_id, left_id)
+
+        if nodo.right:
+            right_id = recorrer(nodo.right)
+            dot.edge(node_id, right_id)
+
+        return node_id
+
+    recorrer(node)
+    dot.render(filename, format="png", cleanup=True)
+    print(f"✅ Árbol de expresión graficado como {filename}.png")

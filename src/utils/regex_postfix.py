@@ -1,6 +1,6 @@
 # utils/regex_postfix.py
 
-from regex_parser import RegexParser
+from regex_parser import RegexParser, graficar_arbol
 
 def to_postfix(expr):
     # Convertimos a postfix como string
