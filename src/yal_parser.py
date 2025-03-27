@@ -49,22 +49,8 @@ class YALParser:
         rules_expanded = self._process_rule_body(rule_body_lines)
 
         for rule in rules_expanded:
-            raw_pattern = rule["pattern"]
-            if (raw_pattern.startswith('"') and raw_pattern.endswith('"')) or (raw_pattern.startswith("'") and raw_pattern.endswith("'")):
-                # Token literal, convertir cada char a su versión escapada
-                literal = raw_pattern[1:-1]
-                escaped = ''.join([
-                    f"\\{c}" if not c.isalnum() and c != ' ' else c
-                    for c in literal
-                ])
-                expanded_pattern = escaped
-            else:
-                expanded_pattern = expand_expression(raw_pattern, self.parsed['lets'])
-            
-            action = rule["action"] if rule["action"] else "SKIP"
-            self.parsed['rules'].append({"pattern": expanded_pattern, "action": action})
-
-
+            expanded_pattern = expand_expression(rule["pattern"], self.parsed['lets'])
+            self.parsed['rules'].append({"pattern": expanded_pattern, "action": rule["action"]})
 
     def _remove_comments(self, code):
         result = ""

@@ -211,7 +211,7 @@ def analizar_cadena(cadena):
 
 if __name__ == "__main__":
     try:
-        with open("./entradas/random_data_3.txt", "r", encoding="utf-8") as f:
+        with open("./entradas/random_data_2.txt", "r", encoding="utf-8") as f:
             entrada = f.read()
     except FileNotFoundError:
         print("❌ No se encontró el archivo 'input.txt'")
