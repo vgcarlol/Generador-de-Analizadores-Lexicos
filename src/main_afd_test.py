@@ -1,3 +1,5 @@
+# main.py
+
 import os
 import pickle  # Usamos pickle para serializar los AFDs
 

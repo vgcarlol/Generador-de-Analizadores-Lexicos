@@ -1,3 +1,4 @@
+# simulation.py 
 def simulate_afd(afd, input_string):
     current_state = afd
     for symbol in input_string:

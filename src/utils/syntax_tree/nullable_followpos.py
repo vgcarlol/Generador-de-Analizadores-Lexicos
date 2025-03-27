@@ -1,3 +1,4 @@
+# utils/syntax_tree/nullable_followpos.py
 def compute_nullable_first_last(node):
     if node.is_leaf():
         node.nullable = (node.value == 'ε')
