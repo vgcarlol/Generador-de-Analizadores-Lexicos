@@ -13,9 +13,14 @@ class RegexParser:
                 next_c = regex[i + 1]
                 if ((curr.isalnum() or curr in [')', '*', '?']) and
                     (next_c.isalnum() or next_c == '(' or next_c == '\\')):
-                    new_regex += '.'
+
+                    # Verificar si ya hay un '|' antes de añadirlo
+                    if new_regex[-1] != '|':
+                        new_regex += '.'
+                        print(f"[DEBUG] Adding concatenation: {curr} . {next_c}")
             i += 1
         return new_regex
+
 
     @staticmethod
     def infix_to_postfix(regex):
@@ -66,6 +71,12 @@ class RegexParser:
 
 def to_postfix(expr):
     print(f"[DEBUG] to_postfix input: {expr}")
+    
+    # Limpieza para eliminar '||' consecutivos
+    expr = re.sub(r'\|\|+', '|', expr)
+    expr = expr.strip('|')  # Eliminar | al principio y al final
+    print(f"[DEBUG] Postfix cleaned input: {expr}")
+    
     raw = RegexParser.infix_to_postfix(expr).replace(" ", "")
     print(f"[DEBUG] Postfix raw string: {raw}")
 
@@ -81,6 +92,7 @@ def to_postfix(expr):
 
     print(f"[DEBUG] Final tokens: {tokens}")
     return tokens
+
 
 
 # ----------------------------

@@ -19,22 +19,23 @@ def parse_yalex(file_path):
 
             # Definiciones
             if '=' in line and 'let' not in line:
-                key, value = line.split('=')
+                key, value = line.split('=', 1)
                 key = key.strip()
-
                 value = value.strip()
 
-                # Quitar brackets primero
+                # Quitar brackets exteriores si existen
                 if value.startswith('[') and value.endswith(']'):
-                    value = value[1:-1].strip()
-
-                # Luego quitar comillas si están
-                if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
                     value = value[1:-1]
 
+                # Quitar comillas exteriores si existen
+                if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+                    value = value[1:-1].strip()
 
+                # Sanear cualquier comilla interna que haya quedado
+                value = value.replace('"', '').replace("'", '')
 
                 definitions[key] = value
+
 
             # Tokens
             elif line.startswith('let'):
@@ -44,6 +45,8 @@ def parse_yalex(file_path):
                 tokens[token_name] = regex
 
     return definitions, tokens
+
+
 
 
 # Paso 2: Generar AFD por cada token y graficar su árbol de expresión
@@ -82,7 +85,7 @@ def simular_afd(afd, entrada):
 
 # Ejemplo de ejecución:
 if __name__ == "__main__":
-    yal_file = "./yal/slr-2.yal"  # Cambia según el archivo que deseas procesar
+    yal_file = "./yal/slr-4.yal"  # Cambia según el archivo que deseas procesar
 
     if not os.path.exists(yal_file):
         print(f"❌ Archivo {yal_file} no encontrado")

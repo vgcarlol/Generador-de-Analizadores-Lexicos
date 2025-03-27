@@ -22,13 +22,13 @@ def replace_whole_word(s, word, replacement):
 
 def expand_lets(expr, definitions):
     changed = True
-    max_depth = 10  # para evitar loops infinitos
+    max_depth = 10
     depth = 0
     while changed and depth < max_depth:
         changed = False
         for ident, rule in definitions.items():
             if ident == rule:
-                continue  # evitar auto-referencias
+                continue
             pattern = f"({rule})"
             new_expr = replace_whole_word(expr, ident, pattern)
             if new_expr != expr:
@@ -37,7 +37,6 @@ def expand_lets(expr, definitions):
         depth += 1
     print(f"[LOG] Después de expand_lets: {expr}")
     return expr
-
 
 def expand_ranges(expr):
     result = ""
@@ -68,7 +67,8 @@ def expand_ranges(expr):
                     ch = content[k]
                     expanded.append(f"\\{ch}" if ch in SPECIAL_OPERATORS else ch)
                     k += 1
-            result += '(' + '|'.join(expanded) + ')'
+            joined = '|'.join(expanded)
+            result += '(' + joined + ')'  # agrupación segura sin comillas
             i = j + 1
         else:
             result += expr[i]
@@ -80,6 +80,9 @@ def escape_literals(expr):
     result = ""
     i = 0
     while i < len(expr):
+        if expr[i] == '"':
+            i += 1
+            continue
         if expr[i] == "'":
             j = i + 1
             literal = ""
@@ -100,15 +103,11 @@ def escape_literals(expr):
                 else:
                     literal += expr[j]
                     j += 1
-            if literal == "":
-                result += ""
-            else:
-
+            if literal:
                 result += '|'.join([
                     f"\\{ch}" if ch in SPECIAL_OPERATORS or not ch.isalnum() else ch
                     for ch in literal
                 ])
-
             i = j + 1
         else:
             result += expr[i]
@@ -173,10 +172,26 @@ def expand_expression(expr, definitions):
     expr = expand_lets(expr, definitions)
     expr = expand_ranges(expr)
     expr = escape_literals(expr)
-    expr = expr.replace(' ', '\\s')  # opcional según la semántica
+    expr = expr.replace(' ', '\\s')  # opcional
     expr = convert_plus(expr)
     expr = convert_optional(expr)
     expr = simplify_parens(expr)
 
+    # Validación extra para evitar | mal colocado
+    expr = expr.strip('|')  # Evitar '|' al inicio o final
+
+    if not validar_parentesis_balanceados(expr):
+        raise ValueError(f"❌ Paréntesis no balanceados en expresión final: {expr}")
+
     print(f"[LOG] Final expression: {expr}")
     return expr
+
+
+def validar_parentesis_balanceados(expr):
+    balance = 0
+    for ch in expr:
+        if ch == '(': balance += 1
+        elif ch == ')': balance -= 1
+        if balance < 0:
+            return False
+    return balance == 0

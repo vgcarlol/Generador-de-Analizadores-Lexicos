@@ -18,6 +18,9 @@ def build_syntax_tree(postfix):
     pos_to_symbol = {}
 
     for token in postfix:
+        print(f"[DEBUG] Procesando token: {token}")
+        
+        # Para operadores unarios (como *, +, ?)
         if token in {'*', '+', '?'}:
             if len(stack) < 1:
                 raise ValueError(f"Error: operador unario '{token}' sin operando suficiente. Stack actual: {stack}")
@@ -25,15 +28,45 @@ def build_syntax_tree(postfix):
             node = TreeNode(token)
             node.left = child
             stack.append(node)
+            print(f"[DEBUG] Pushed unary operator tree for {token}")
 
+        # Para operadores binarios (|, .)
         elif token in {'|', '.'}:
-            if len(stack) < 2:
-                raise ValueError(f"Error: operador binario '{token}' sin operandos suficientes. Stack actual: {stack}")
-            right = stack.pop()
-            left = stack.pop()
-            node = TreeNode(token, left, right)
-            stack.append(node)
+            print(f"[DEBUG] Stack antes de procesar el operador {token}: {stack}")
+            if token == '|':
+                if len(stack) < 2:
+                    raise ValueError(f"Error: operador binario '{token}' sin operandos suficientes para alternancia. Stack actual: {stack}")
+                right = stack.pop()
+                left = stack.pop()
+                print(f"[DEBUG] Operador binario | con operando izquierdo: {left.value} y derecho: {right.value}")
+                # Alternancia, si el operando derecho es ε, no lo añadimos a la pila
+                if right.value == "ε":
+                    stack.append(left)  # Solo se añade el operando izquierdo
+                else:
+                    node = TreeNode(token, left, right)
+                    stack.append(node)
+                print(f"[DEBUG] Alternancia con operando izquierdo: {left.value} y derecho: {right.value}")
+            
+            elif token == '.':
+                # Comprobamos si la pila tiene al menos 2 operandos
+                if len(stack) < 2:
+                    print(f"[DEBUG] No hay suficientes operandos para procesar el operador '.'. Stack actual: {stack}")
+                    continue  # No procesamos el operador hasta que haya suficientes operandos
 
+                right = stack.pop()
+                left = stack.pop()
+                print(f"[DEBUG] Operador binario . con operando izquierdo: {left.value} y derecho: {right.value}")
+                
+                # Concatenación, si el operando derecho es ε, solo agregamos el izquierdo
+                if right.value == "ε":
+                    print(f"[DEBUG] Concatenación con ε, solo agregando el operando izquierdo.")
+                    stack.append(left)
+                else:
+                    node = TreeNode(token, left, right)
+                    stack.append(node)
+                    print(f"[DEBUG] Concatenando {left.value} y {right.value}")
+
+        # Para operadores literales (tokens)
         else:
             node = TreeNode(token)
             node.position = position_counter[0]
@@ -41,8 +74,12 @@ def build_syntax_tree(postfix):
             node.firstpos = {node.position}
             node.lastpos = {node.position}
             stack.append(node)
+            print(f"[DEBUG] Literal procesado: {token}, pos: {node.position}")
             position_counter[0] += 1
 
+        print(f"[DEBUG] Stack actual después de procesar el token {token}: {stack}")
+    
+    # Verificar que la pila contenga solo un nodo (el árbol completo)
     if len(stack) != 1:
         raise ValueError(f"Error: el stack no tiene exactamente un árbol al final. Stack actual: {stack}")
 
