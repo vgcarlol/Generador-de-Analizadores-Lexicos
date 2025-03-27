@@ -49,14 +49,20 @@ def parse_yalex(file_path):
     return definitions, tokens
 
 
-# Paso 2: Generar AFD por cada token y graficar su árbol de expresión
+from yal_parser import YALParser
+
 def generar_afds(yal_path):
-    definitions, tokens = parse_yalex(yal_path)
+    parser = YALParser(open(yal_path, encoding='utf-8').read())
+    parsed = parser.get_parsed()
+    tokens = parsed["rules"]
+    definitions = parsed["lets"]
     afds = {}
 
-    for token, regex in tokens.items():
-        print(f"\n🔎 Procesando token: {token}")
-        expanded = expand_expression(regex, definitions)
+    for i, token_rule in enumerate(tokens):
+        token_name = f"token_{i}"
+        raw_pattern = token_rule["pattern"]
+        print(f"\n🔎 Procesando token: {token_name}")
+        expanded = expand_expression(raw_pattern, definitions)
         print(f"🧠 Expresión expandida: {expanded}")
 
         final_expr = f"({expanded}).#"
@@ -64,12 +70,13 @@ def generar_afds(yal_path):
         print(f"📤 Postfix: {postfix}")
 
         syntax_tree, pos_to_symbol = build_syntax_tree(postfix)
-        graficar_arbol(syntax_tree, filename=f"tree_{token}")
+        graficar_arbol(syntax_tree, filename=f"tree_{token_name}")
 
         afd = construct_direct_afd(syntax_tree, pos_to_symbol)
-        afds[token] = afd
+        afds[token_name] = afd
 
     return afds
+
 
 
 # Paso 3: Guardar los AFDs en un archivo usando pickle

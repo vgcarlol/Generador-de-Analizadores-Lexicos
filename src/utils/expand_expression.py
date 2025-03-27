@@ -147,7 +147,7 @@ def convert_optional(expr):
     while i < len(expr):
         if expr[i] == '?' and (i == 0 or expr[i-1] != '\\'):
             operand, prefix = extract_last_operand(result)
-            result = prefix + f"({operand}|ε)"
+            result = prefix + operand + f"?"
             i += 1
         else:
             result += expr[i]
