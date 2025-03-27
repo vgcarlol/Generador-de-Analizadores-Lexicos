@@ -1,5 +1,6 @@
 import os
 from utils.expand_expression import expand_expression
+from utils.lexer_generator import generar_lexer_program
 from utils.regex_postfix import to_postfix, graficar_arbol
 from utils.syntax_tree.build_tree import build_syntax_tree
 from utils.syntax_tree.afd_from_tree import construct_direct_afd
@@ -85,12 +86,21 @@ def simular_afd(afd, entrada):
 
 # Ejemplo de ejecución:
 if __name__ == "__main__":
-    yal_file = "./yal/slr-4.yal"  # Cambia según el archivo que deseas procesar
+    yal_file = "./yal/slr-4.yal"  # Cambia esto si es necesario
 
     if not os.path.exists(yal_file):
         print(f"❌ Archivo {yal_file} no encontrado")
     else:
-        afds = generar_afds(yal_file)
+        afds = generar_afds(yal_file)  # Generamos los AFDs
+
+        # Ahora generamos el código fuente del lexer
+        lexer_program_code = generar_lexer_program(afds)
+
+        # Guardamos el código del lexer en un archivo
+        with open("lexer_program.py", "w") as f:
+            f.write(lexer_program_code)
+
+        print("✅ Lexer generado con éxito en lexer_program.py")
 
         print("\n✅ AFDs generados por token:")
         for token, afd in afds.items():
