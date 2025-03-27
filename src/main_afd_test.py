@@ -1,4 +1,6 @@
 import os
+import pickle  # Usamos pickle para serializar los AFDs
+
 from utils.expand_expression import expand_expression
 from utils.lexer_generator import generar_lexer_program
 from utils.regex_postfix import to_postfix, graficar_arbol
@@ -37,7 +39,6 @@ def parse_yalex(file_path):
 
                 definitions[key] = value
 
-
             # Tokens
             elif line.startswith('let'):
                 parts = line.replace('let', '').split('=')
@@ -48,8 +49,6 @@ def parse_yalex(file_path):
     return definitions, tokens
 
 
-
-
 # Paso 2: Generar AFD por cada token y graficar su árbol de expresión
 def generar_afds(yal_path):
     definitions, tokens = parse_yalex(yal_path)
@@ -58,7 +57,7 @@ def generar_afds(yal_path):
     for token, regex in tokens.items():
         print(f"\n🔎 Procesando token: {token}")
         expanded = expand_expression(regex, definitions)
-        print(f"🧠 Expresion expandida: {expanded}")
+        print(f"🧠 Expresión expandida: {expanded}")
 
         final_expr = f"({expanded}).#"
         postfix = to_postfix(final_expr)
@@ -73,7 +72,28 @@ def generar_afds(yal_path):
     return afds
 
 
-# Paso 3: Simular input sobre el AFD (a futuro)
+# Paso 3: Guardar los AFDs en un archivo usando pickle
+def save_afds_to_pickle(afds, filename="afds.pickle"):
+    """Guardar los AFDs generados en un archivo binario utilizando pickle."""
+    with open(filename, 'wb') as pickle_file:
+        pickle.dump(afds, pickle_file)
+    print(f"✅ AFDs guardados en {filename}")
+
+
+# Paso 4: Cargar los AFDs desde un archivo usando pickle
+def load_afds_from_pickle(filename="afds.pickle"):
+    """Cargar los AFDs desde un archivo binario usando pickle."""
+    if os.path.exists(filename):
+        with open(filename, 'rb') as pickle_file:
+            afds = pickle.load(pickle_file)
+        print(f"✅ AFDs cargados desde {filename}")
+        return afds
+    else:
+        print(f"❌ El archivo {filename} no existe.")
+        return None
+
+
+# Paso 5: Simular input sobre el AFD (a futuro)
 def simular_afd(afd, entrada):
     current = afd['start']
     for c in entrada:
@@ -86,22 +106,28 @@ def simular_afd(afd, entrada):
 
 # Ejemplo de ejecución:
 if __name__ == "__main__":
-    yal_file = "./yal/slr-4.yal"  # Cambia esto si es necesario
+    yal_file = "./yal/slr-3.yal"  # Cambia esto si es necesario
 
-    if not os.path.exists(yal_file):
-        print(f"❌ Archivo {yal_file} no encontrado")
-    else:
-        afds = generar_afds(yal_file)  # Generamos los AFDs
+    # Intentamos cargar los AFDs desde un archivo pickle
+    afds = load_afds_from_pickle()
 
-        # Ahora generamos el código fuente del lexer
-        lexer_program_code = generar_lexer_program(afds)
+    # Si no se cargan, generamos los AFDs
+    if afds is None:
+        if not os.path.exists(yal_file):
+            print(f"❌ Archivo {yal_file} no encontrado")
+        else:
+            afds = generar_afds(yal_file)  # Generamos los AFDs
+            save_afds_to_pickle(afds)  # Guardamos los AFDs generados en un archivo pickle
 
-        # Guardamos el código del lexer en un archivo
-        with open("lexer_program.py", "w") as f:
-            f.write(lexer_program_code)
+    # Ahora generamos el código fuente del lexer
+    lexer_program_code = generar_lexer_program(afds)
 
-        print("✅ Lexer generado con éxito en lexer_program.py")
+    # Guardamos el código del lexer en un archivo
+    with open("lexer_program.py", "w", encoding="utf-8") as f:
+        f.write(lexer_program_code)
 
-        print("\n✅ AFDs generados por token:")
-        for token, afd in afds.items():
-            print(f"  - {token}: {len(afd['states'])} estados, inicio {afd['start']}, aceptacion {afd['accepting']}")
+    print("✅ Lexer generado con éxito en lexer_program.py")
+
+    print("\n✅ AFDs generados por token:")
+    for token, afd in afds.items():
+        print(f"  - {token}: {len(afd['transitions'])} transiciones, inicio {afd['start']}, aceptación {afd['accepting']}")
