@@ -40,25 +40,3 @@ def visualize_afd(afd, filename='afd_output'):
     add_nodes(afd)
 
     dot.render(filename, format='png', view=True)
-
-
-def visualize_syntax_tree(syntax_tree, filename='syntax_tree'):
-    dot = Digraph()
-    visited = set()
-
-    def traverse(node):
-        if node is None or id(node) in visited:
-            return
-        visited.add(id(node))
-        # El label muestra el símbolo y, opcionalmente, otras propiedades
-        label = f"{node.symbol}"
-        dot.node(str(id(node)), label=label)
-        if node.left:
-            dot.edge(str(id(node)), str(id(node.left)), label="L")
-            traverse(node.left)
-        if node.right:
-            dot.edge(str(id(node)), str(id(node.right)), label="R")
-            traverse(node.right)
-
-    traverse(syntax_tree)
-    dot.render(filename, format='png', view=True)
