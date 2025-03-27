@@ -7,27 +7,21 @@ class RegexParser:
         i = 0
         while i < len(regex):
             c = regex[i]
-
-            # Copiar el caracter actual
             new_regex += c
-
-            # Determinar el siguiente caracter válido (sin salir del índice)
             if i + 1 < len(regex):
                 curr = regex[i]
                 next_c = regex[i + 1]
-
-                # Si se requiere concatenación
                 if ((curr.isalnum() or curr in [')', '*', '?']) and
-                    (next_c.isalnum() or next_c == '(')):
+                    (next_c.isalnum() or next_c == '(' or next_c == '\\')):
                     new_regex += '.'
-
             i += 1
-
         return new_regex
 
     @staticmethod
     def infix_to_postfix(regex):
+        print(f"[DEBUG] Infix input: {regex}")
         regex = RegexParser.add_concatenation_operators(regex)
+        print(f"[DEBUG] After adding concatenation: {regex}")
         output = []
         stack = []
 
@@ -36,33 +30,44 @@ class RegexParser:
             char = regex[i]
 
             if char == '\\':
-                output.append(char + regex[i + 1])
-                i += 2
-                continue
+                if i + 1 < len(regex):
+                    output.append(char + regex[i + 1])
+                    print(f"[DEBUG] Escaped char: {char + regex[i + 1]}")
+                    i += 2
+                    continue
+                else:
+                    raise ValueError("Escape character at end of input")
 
-            if char.isalnum() or char in ['#', 'ε']:
+            if char.isalnum() or char in ['#', 'ε', '_', ' ', '\t', '\n']:
                 output.append(char)
             elif char == '(':
                 stack.append(char)
             elif char == ')':
                 while stack and stack[-1] != '(':
                     output.append(stack.pop())
+                if not stack:
+                    raise ValueError("Unmatched closing parenthesis")
                 stack.pop()
             else:
                 while stack and RegexParser.precedence.get(char, 0) <= RegexParser.precedence.get(stack[-1], 0):
                     output.append(stack.pop())
                 stack.append(char)
 
+            print(f"[DEBUG] Char processed: {char}, Stack: {stack}, Output: {output}")
             i += 1
 
         while stack:
+            if stack[-1] == '(':
+                raise ValueError("Unmatched opening parenthesis")
             output.append(stack.pop())
 
+        print(f"[DEBUG] Final Postfix Output: {''.join(output)}")
         return ''.join(output)
 
-
 def to_postfix(expr):
+    print(f"[DEBUG] to_postfix input: {expr}")
     raw = RegexParser.infix_to_postfix(expr).replace(" ", "")
+    print(f"[DEBUG] Postfix raw string: {raw}")
 
     tokens = []
     i = 0
@@ -74,6 +79,7 @@ def to_postfix(expr):
             tokens.append(raw[i])
             i += 1
 
+    print(f"[DEBUG] Final tokens: {tokens}")
     return tokens
 
 
@@ -82,17 +88,29 @@ def to_postfix(expr):
 # ----------------------------
 
 def graficar_arbol(node, filename="syntax_tree"):
+    import os
     from graphviz import Digraph
 
+    # Ruta absoluta al dot.exe local
+    dot_path = os.path.abspath("./Graphviz/bin/dot.exe")
+    os.environ["PATH"] += os.pathsep + os.path.dirname(dot_path)
+
+    # Crear carpeta de salida si no existe
+    output_dir = "./output_trees"
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Ruta completa para el archivo
+    output_path = os.path.join(output_dir, filename)
+
     dot = Digraph(comment="Árbol de Sintaxis")
+    dot.engine = 'dot'
 
     def recorrer(nodo):
         if nodo is None:
             return "None"
 
-        # ID único para el nodo
         node_id = str(id(nodo))
-        label = nodo.symbol if nodo.symbol else ""
+        label = nodo.value if nodo.value else ""
         if nodo.position is not None:
             label += f"\n[{nodo.position}]"
 
@@ -109,5 +127,5 @@ def graficar_arbol(node, filename="syntax_tree"):
         return node_id
 
     recorrer(node)
-    dot.render(filename, format="png", cleanup=True)
-    print(f"✅ Árbol de expresión graficado como {filename}.png")
+    dot.render(output_path, format="png", cleanup=True)
+    print(f"✅ Árbol de expresión graficado como {output_path}.png")

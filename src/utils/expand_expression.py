@@ -1,6 +1,6 @@
 # utils/expand_expression.py
 
-SPECIAL_OPERATORS = {'+', '?', '*', '(', ')', '|', '.', '\\'}
+SPECIAL_OPERATORS = {'+', '?', '*', '(', ')', '|', '.', '\\', '-'}
 
 def is_boundary(ch):
     return not (ch.isalnum() or ch == '_')
@@ -22,15 +22,22 @@ def replace_whole_word(s, word, replacement):
 
 def expand_lets(expr, definitions):
     changed = True
-    while changed:
+    max_depth = 10  # para evitar loops infinitos
+    depth = 0
+    while changed and depth < max_depth:
         changed = False
         for ident, rule in definitions.items():
-            new_expr = replace_whole_word(expr, ident, f"({rule})")
+            if ident == rule:
+                continue  # evitar auto-referencias
+            pattern = f"({rule})"
+            new_expr = replace_whole_word(expr, ident, pattern)
             if new_expr != expr:
                 expr = new_expr
                 changed = True
+        depth += 1
     print(f"[LOG] Después de expand_lets: {expr}")
     return expr
+
 
 def expand_ranges(expr):
     result = ""
@@ -96,7 +103,12 @@ def escape_literals(expr):
             if literal == "":
                 result += ""
             else:
-                result += '|'.join([f"\\{ch}" if ch in SPECIAL_OPERATORS or not ch.isalnum() else ch for ch in literal])
+
+                result += '|'.join([
+                    f"\\{ch}" if ch in SPECIAL_OPERATORS or not ch.isalnum() else ch
+                    for ch in literal
+                ])
+
             i = j + 1
         else:
             result += expr[i]
@@ -136,8 +148,7 @@ def convert_optional(expr):
     while i < len(expr):
         if expr[i] == '?' and (i == 0 or expr[i-1] != '\\'):
             operand, prefix = extract_last_operand(result)
-            result = prefix + f"({operand})|("
-            result += ")"  # cerrar el grupo de alternativa
+            result = prefix + f"({operand}|ε)"
             i += 1
         else:
             result += expr[i]
@@ -162,6 +173,7 @@ def expand_expression(expr, definitions):
     expr = expand_lets(expr, definitions)
     expr = expand_ranges(expr)
     expr = escape_literals(expr)
+    expr = expr.replace(' ', '\\s')  # opcional según la semántica
     expr = convert_plus(expr)
     expr = convert_optional(expr)
     expr = simplify_parens(expr)

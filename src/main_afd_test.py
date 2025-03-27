@@ -21,7 +21,19 @@ def parse_yalex(file_path):
             if '=' in line and 'let' not in line:
                 key, value = line.split('=')
                 key = key.strip()
-                value = value.strip().strip("[]").replace("'", "")
+
+                value = value.strip()
+
+                # Quitar brackets primero
+                if value.startswith('[') and value.endswith(']'):
+                    value = value[1:-1].strip()
+
+                # Luego quitar comillas si están
+                if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+                    value = value[1:-1]
+
+
+
                 definitions[key] = value
 
             # Tokens
@@ -44,7 +56,7 @@ def generar_afds(yal_path):
         expanded = expand_expression(regex, definitions)
         print(f"🧠 Expresion expandida: {expanded}")
 
-        final_expr = f"({expanded})#."
+        final_expr = f"({expanded}).#"
         postfix = to_postfix(final_expr)
         print(f"📤 Postfix: {postfix}")
 
@@ -70,7 +82,7 @@ def simular_afd(afd, entrada):
 
 # Ejemplo de ejecución:
 if __name__ == "__main__":
-    yal_file = "./yal/slr-1.yal"  # Cambia según el archivo que deseas procesar
+    yal_file = "./yal/slr-2.yal"  # Cambia según el archivo que deseas procesar
 
     if not os.path.exists(yal_file):
         print(f"❌ Archivo {yal_file} no encontrado")
