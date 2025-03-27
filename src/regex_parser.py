@@ -73,12 +73,12 @@ class RegexParser:
 
 def to_postfix(expr):
     print(f"[DEBUG] to_postfix input: {expr}")
-    
-    # Limpieza para eliminar '||' consecutivos
-    expr = re.sub(r'\|\|+', '|', expr)
-    expr = expr.strip('|')  # Eliminar | al principio y al final
-    print(f"[DEBUG] Postfix cleaned input: {expr}")
-    
+
+    # Limpieza manual: evitar || y '|' al inicio/final
+    while '||' in expr:
+        expr = expr.replace('||', '|')
+    expr = expr.strip('|')
+
     raw = RegexParser.infix_to_postfix(expr).replace(" ", "")
     print(f"[DEBUG] Postfix raw string: {raw}")
 
@@ -94,6 +94,7 @@ def to_postfix(expr):
 
     print(f"[DEBUG] Final tokens: {tokens}")
     return tokens
+
 
 
 

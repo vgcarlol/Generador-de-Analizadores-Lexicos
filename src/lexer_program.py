@@ -219,7 +219,7 @@ if __name__ == "__main__":
 
     resultado = analizar_cadena(entrada)
 
-    with open("output.txt", "w", encoding="utf-8") as f:
+    with open("./salidas/random_data_3.txt", "w", encoding="utf-8") as f:
         for token, lexema in resultado:
             f.write(f"{token}: '{lexema}'\n")
 
