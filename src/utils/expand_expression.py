@@ -32,10 +32,15 @@ def expand_lets(expr, definitions):
         for ident, rule in definitions.items():
             if ident == rule:
                 continue
-            new_expr = replace_whole_word(expr, ident, rule)
-            if new_expr != expr:
-                expr = new_expr
-                changed = True
+
+            # Detectar cadena entre comillas dobles: "0123456789"
+            if rule.startswith('"') and rule.endswith('"'):
+                chars = rule[1:-1]
+                expanded = '|'.join(
+                    [f"\\{ch}" if ch in SPECIAL_OPERATORS or ch == ' ' else ch for ch in chars]
+                )
+                rule = f"({expanded})"
+
         depth += 1
     print(f"[LOG] Después de expand_lets: {expr}")
     return expr
@@ -73,8 +78,17 @@ def expand_ranges(expr):
                     else:
                         expanded.append(f"\\{ch}" if ch in SPECIAL_OPERATORS else ch)
                     k += 1
-            joined = '|'.join(expanded)
-            result += '(' + joined + ')'
+            # Eliminar elementos vacíos
+            expanded = list(filter(None, expanded))
+
+            # Solo si hay elementos, unirlos
+            if expanded:
+                joined = '|'.join(expanded)
+                result += '(' + joined + ')'
+            else:
+                result += 'ε'  # o podrías lanzar error si no se permite un rango vacío
+
+
             i = j + 1
         else:
             result += expr[i]
@@ -144,11 +158,19 @@ def extract_last_operand(result):
     return result[-1], result[:-1]
 
 
+def is_escaped(expr, index):
+    count = 0
+    i = index - 1
+    while i >= 0 and expr[i] == '\\':
+        count += 1
+        i -= 1
+    return count % 2 == 1
+
 def convert_plus(expr):
     result = ""
     i = 0
     while i < len(expr):
-        if expr[i] == '+' and (i == 0 or expr[i-1] != '\\'):
+        if expr[i] == '+' and not is_escaped(expr, i):
             operand, prefix = extract_last_operand(result)
             result = prefix + operand + f"({operand})*"
             i += 1
@@ -157,6 +179,7 @@ def convert_plus(expr):
             i += 1
     print(f"[LOG] Después de convert_plus: {result}")
     return result
+
 
 
 def convert_optional(expr):
@@ -207,9 +230,15 @@ def expand_expression(expr, definitions):
 
 def validar_parentesis_balanceados(expr):
     balance = 0
-    for ch in expr:
-        if ch == '(': balance += 1
-        elif ch == ')': balance -= 1
+    i = 0
+    while i < len(expr):
+        if expr[i] == '\\':  # ignorar el siguiente carácter
+            i += 2
+            continue
+        if expr[i] == '(': balance += 1
+        elif expr[i] == ')': balance -= 1
         if balance < 0:
             return False
+        i += 1
     return balance == 0
+

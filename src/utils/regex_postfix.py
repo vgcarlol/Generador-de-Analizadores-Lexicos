@@ -3,18 +3,13 @@
 from regex_parser import RegexParser, graficar_arbol
 
 def to_postfix(expr):
-    # Convertimos a postfix como string
-    raw = RegexParser.infix_to_postfix(expr).replace(" ", "")
+    print(f"[DEBUG] to_postfix input: {expr}")
 
-    # Convertimos el string en una lista de tokens, considerando escapes
-    tokens = []
-    i = 0
-    while i < len(raw):
-        if raw[i] == '\\':
-            tokens.append(raw[i] + raw[i + 1])
-            i += 2
-        else:
-            tokens.append(raw[i])
-            i += 1
+    # Limpieza manual: evitar || y '|' al inicio/final
+    while '||' in expr:
+        expr = expr.replace('||', '|')
+    expr = expr.strip('|')
 
+    tokens = RegexParser.infix_to_postfix(expr)
+    print(f"[DEBUG] Final tokens: {tokens}")
     return tokens

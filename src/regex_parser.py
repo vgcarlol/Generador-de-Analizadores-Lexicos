@@ -5,23 +5,57 @@ class RegexParser:
 
     @staticmethod
     def add_concatenation_operators(regex):
-        new_regex = ""
+        result = ''
         i = 0
-        while i < len(regex):
-            c = regex[i]
-            new_regex += c
-            if i + 1 < len(regex):
-                curr = regex[i]
-                next_c = regex[i + 1]
-                if ((curr.isalnum() or curr in [')', '*', '?']) and
-                    (next_c.isalnum() or next_c == '(' or next_c == '\\')):
+        tokens_dobles = [":=", "<=", ">=", "==", "!=", "<<", ">>"]  # Agregá los que necesites
 
-                    # Verificar si ya hay un '|' antes de añadirlo
-                    if new_regex[-1] != '|':
-                        new_regex += '.'
-                        print(f"[DEBUG] Adding concatenation: {curr} . {next_c}")
+        while i < len(regex):
+            # Detectar tokens dobles primero
+            if any(regex.startswith(tok, i) for tok in tokens_dobles):
+                for tok in tokens_dobles:
+                    if regex.startswith(tok, i):
+                        result += tok
+                        i += len(tok)
+                        # Concatenación si sigue algo
+                        if i < len(regex):
+                            result += '.'
+                        break
+                continue
+
+            c1 = regex[i]
+
+            # Manejo de escapes
+            if c1 == '\\' and i + 1 < len(regex):
+                result += c1 + regex[i + 1]
+                i += 2
+                if i < len(regex):
+                    c2 = regex[i]
+                    if RegexParser._needs_concatenation('\\' + regex[i - 1], c2):
+                        result += '.'
+                continue
+
+            result += c1
+
+            if i + 1 < len(regex):
+                c2 = regex[i + 1]
+                if RegexParser._needs_concatenation(c1, c2):
+                    result += '.'
+
             i += 1
-        return new_regex
+        return result
+
+        
+    
+
+    @staticmethod
+    def _needs_concatenation(c1, c2):
+        """
+        Decide si se necesita concatenación entre c1 y c2
+        """
+        valid_end = lambda c: c.isalnum() or c in ['*', '?', ')', 'ε'] or (len(c) == 2 and c[0] == '\\')
+        valid_start = lambda c: c.isalnum() or c in ['(', 'ε', '#'] or (len(c) == 2 and c[0] == '\\')
+        return valid_end(c1) and valid_start(c2)
+
 
 
     @staticmethod
@@ -32,10 +66,22 @@ class RegexParser:
         output = []
         stack = []
 
+
+        def is_valid_operand(token):
+            if not token:
+                return False
+            if token.startswith('\\'):
+                return True
+            if token in ['|', '.', '(']:
+                return False
+            return True
+
+
         i = 0
         while i < len(regex):
             char = regex[i]
 
+            # Manejo de escapes
             if char == '\\':
                 if i + 1 < len(regex):
                     output.append(char + regex[i + 1])
@@ -45,20 +91,35 @@ class RegexParser:
                 else:
                     raise ValueError("Escape character at end of input")
 
-            if char.isalnum() or char in ['#', 'ε', '_', ' ', '\t', '\n']:
+            # Literales y símbolos válidos
+            if char.isalnum() or char in ['#', 'ε', '_', ' ', '\t', '\n', ':', ';', '=', '<', '>', '+', '-', '*', '/', '!']:
                 output.append(char)
+
             elif char == '(':
                 stack.append(char)
+
             elif char == ')':
                 while stack and stack[-1] != '(':
                     output.append(stack.pop())
                 if not stack:
                     raise ValueError("Unmatched closing parenthesis")
-                stack.pop()
-            else:
-                while stack and RegexParser.precedence.get(char, 0) <= RegexParser.precedence.get(stack[-1], 0):
+                stack.pop()  # Eliminar '('
+
+            elif char in RegexParser.precedence:
+                # Evitar operadores binarios consecutivos o sin operandos
+                if char in ['|', '.']:
+                    if not output:
+                        raise ValueError(f"Operador binario '{char}' sin operando antes")
+
+                    last = output[-1]
+
+                while (stack and stack[-1] != '(' and
+                    RegexParser.precedence.get(char, 0) <= RegexParser.precedence.get(stack[-1], 0)):
                     output.append(stack.pop())
                 stack.append(char)
+
+            else:
+                raise ValueError(f"Carácter inválido en la expresión: '{char}'")
 
             print(f"[DEBUG] Char processed: {char}, Stack: {stack}, Output: {output}")
             i += 1
@@ -69,7 +130,9 @@ class RegexParser:
             output.append(stack.pop())
 
         print(f"[DEBUG] Final Postfix Output: {''.join(output)}")
-        return ''.join(output)
+        return output
+        
+
 
 def to_postfix(expr):
     print(f"[DEBUG] to_postfix input: {expr}")
@@ -79,21 +142,10 @@ def to_postfix(expr):
         expr = expr.replace('||', '|')
     expr = expr.strip('|')
 
-    raw = RegexParser.infix_to_postfix(expr).replace(" ", "")
-    print(f"[DEBUG] Postfix raw string: {raw}")
-
-    tokens = []
-    i = 0
-    while i < len(raw):
-        if raw[i] == '\\':
-            tokens.append(raw[i] + raw[i + 1])
-            i += 2
-        else:
-            tokens.append(raw[i])
-            i += 1
-
+    tokens = RegexParser.infix_to_postfix(expr)
     print(f"[DEBUG] Final tokens: {tokens}")
     return tokens
+
 
 
 

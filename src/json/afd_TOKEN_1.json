@@ -1,0 +1,15 @@
+{
+    "states": [
+        "S0",
+        "S1",
+        "S2"
+    ],
+    "start": "S0",
+    "accepting": [
+        "S2"
+    ],
+    "transitions": {
+        "S0,i": "S1",
+        "S1,d": "S2"
+    }
+}

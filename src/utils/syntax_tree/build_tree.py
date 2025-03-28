@@ -40,12 +40,8 @@ def build_syntax_tree(postfix):
                 right = stack.pop()
                 left = stack.pop()
                 print(f"[DEBUG] Operador binario | con operando izquierdo: {left.value} y derecho: {right.value}")
-                # Alternancia, si el operando derecho es ε, no lo añadimos a la pila
-                if right.value == "ε":
-                    stack.append(left)  # Solo se añade el operando izquierdo
-                else:
-                    node = TreeNode(token, left, right)
-                    stack.append(node)
+                node = TreeNode(token, left, right)
+                stack.append(node)
                 print(f"[DEBUG] Alternancia con operando izquierdo: {left.value} y derecho: {right.value}")
             
             elif token == '.':
@@ -70,13 +66,20 @@ def build_syntax_tree(postfix):
         # Para operadores literales (tokens)
         else:
             node = TreeNode(token)
-            node.position = position_counter[0]
-            pos_to_symbol[position_counter[0]] = token
-            node.firstpos = {node.position}
-            node.lastpos = {node.position}
+            if token == 'ε':
+                node.nullable = True
+                node.firstpos = set()
+                node.lastpos = set()
+                print(f"[DEBUG] Procesado ε como nodo terminal especial (sin posición)")
+            else:
+                node.position = position_counter[0]
+                pos_to_symbol[position_counter[0]] = token
+                node.firstpos = {node.position}
+                node.lastpos = {node.position}
+                print(f"[DEBUG] Literal procesado: {token}, pos: {node.position}")
+                position_counter[0] += 1
             stack.append(node)
-            print(f"[DEBUG] Literal procesado: {token}, pos: {node.position}")
-            position_counter[0] += 1
+
 
         print(f"[DEBUG] Stack actual después de procesar el token {token}: {stack}")
     
