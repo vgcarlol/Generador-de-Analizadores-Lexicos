@@ -24,26 +24,41 @@ def replace_whole_word(s, word, replacement):
 
 
 def expand_lets(expr, definitions):
-    changed = True
-    max_depth = 10
-    depth = 0
-    while changed and depth < max_depth:
-        changed = False
-        for ident, rule in definitions.items():
-            if ident == rule:
-                continue
+    for ident, rule in definitions.items():
+        rule = rule.strip()
 
-            # Detectar cadena entre comillas dobles: "0123456789"
-            if rule.startswith('"') and rule.endswith('"'):
-                chars = rule[1:-1]
-                expanded = '|'.join(
-                    [f"\\{ch}" if ch in SPECIAL_OPERATORS or ch == ' ' else ch for ch in chars]
-                )
-                rule = f"({expanded})"
+        # 👉 Si es tipo ["\s\t\n"]
+        if rule.startswith('["') and rule.endswith('"]'):
+            chars = rule[2:-2]  # quita [" y "]
+            expanded = '|'.join([
+                r'\s' if c == ' ' else
+                r'\t' if c == '\t' else
+                r'\n' if c == '\n' else
+                f"\\{c}" if c in SPECIAL_OPERATORS else c
+                for c in chars
+            ])
+            rule = f"({expanded})"
 
-        depth += 1
+        elif rule.startswith('"') and rule.endswith('"'):
+            # 👉 O si es un string tipo "abc"
+            chars = rule[1:-1]
+            expanded = '|'.join([
+                r'\s' if c == ' ' else
+                r'\t' if c == '\t' else
+                r'\n' if c == '\n' else
+                f"\\{c}" if c in SPECIAL_OPERATORS else c
+                for c in chars
+            ])
+            rule = f"({expanded})"
+
+        elif '[' in rule and ']' in rule and '-' in rule:
+            rule = expand_ranges(rule)
+
+        expr = replace_whole_word(expr, ident, rule)
+
     print(f"[LOG] Después de expand_lets: {expr}")
     return expr
+
 
 
 def expand_ranges(expr):

@@ -1,15 +1,16 @@
 {
     "states": [
         "S0",
-        "S1",
-        "S2"
+        "S1"
     ],
     "start": "S0",
     "accepting": [
-        "S2"
+        "S1"
     ],
     "transitions": {
-        "S0,w": "S1",
-        "S1,s": "S2"
+        "S0,\\s": "S1",
+        "S0,\\t": "S1",
+        "S0,\\n": "S1",
+        "S1,m": "S1"
     }
 }
