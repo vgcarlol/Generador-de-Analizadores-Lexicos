@@ -23,26 +23,26 @@ class RegexExpander:
     def process_literals(self, expr):
         """
         Procesa la cadena expr para detectar fragmentos entre comillas simples.
-        Si el contenido es de un solo carácter y es un símbolo especial, lo escapa;
-        en caso contrario, devuelve el contenido sin las comillas.
+        Si el contenido es de un solo carácter y es uno de los símbolos que deben tratarse como literales
+        (por ejemplo: (, ), *, +, :, .), lo escapa; en caso contrario, devuelve el contenido sin las comillas.
         """
         result = ""
         i = 0
+        # Los símbolos que queremos que se traten como literales
+        special_set = {"(", ")", "*", "+", ":", "."}
         while i < len(expr):
             if expr[i] == "'":
-                # Detectamos el inicio de un literal
                 literal = ""
                 i += 1  # Saltamos la comilla de apertura
-                # Acumular hasta la siguiente comilla
                 while i < len(expr) and expr[i] != "'":
                     literal += expr[i]
                     i += 1
                 # Saltar la comilla de cierre (si existe)
                 if i < len(expr) and expr[i] == "'":
                     i += 1
-                # Procesar el literal usando el contenido interno (sin comillas)
-                inner = literal  # ya tenemos el contenido sin comillas
-                if len(inner) == 1 and inner in "()*+|.?":
+                inner = literal  # Contenido sin las comillas
+                # Si es un solo carácter que está en el conjunto especial, lo escapamos.
+                if len(inner) == 1 and inner in special_set:
                     result += "\\" + inner
                     print(f"📌 Escapando literal especial: '{literal}' -> \\{inner}")
                 else:
@@ -52,6 +52,7 @@ class RegexExpander:
                 result += expr[i]
                 i += 1
         return result
+
 
     def _strip_quotes(self, expr):
         expr = expr.strip()

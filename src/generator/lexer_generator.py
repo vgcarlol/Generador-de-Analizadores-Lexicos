@@ -30,7 +30,20 @@ class Lexer:
                         last_accepting = current
                         last_accepting_pos = i
                 else:
-                    break
+                    # Intentamos buscar una transición con clave escapada
+                    found = False
+                    for key, next_state in current.transitions.items():
+                        # Si la clave comienza con "\\" y el símbolo coincide con key[1:]
+                        if key.startswith("\\\\") and symbol == key[1:]:
+                            current = next_state
+                            i += 1
+                            if current.is_final:
+                                last_accepting = current
+                                last_accepting_pos = i
+                            found = True
+                            break
+                    if not found:
+                        break
 
             if last_accepting:
                 lexeme = text[position:last_accepting_pos]
@@ -42,6 +55,7 @@ class Lexer:
                 position += 1
 
         return results
+
 
     def _extract_token_id(self, state):
         return getattr(state, 'token_id', 'UNKNOWN')
