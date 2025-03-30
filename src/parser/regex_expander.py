@@ -5,25 +5,53 @@ class RegexExpander:
     def normalize(self, expr):
         print(f"🔎 Normalizando: {expr}")
         
-        # Paso 1: quitar comillas
-        expr = self._strip_quotes(expr)
-
-        # Paso 2: expandir lets primero
+        # Paso 1: Procesar literales incrustados sin usar re
+        expr = self.process_literals(expr)
+        
+        # Paso 2: Expandir lets
         expr = self.expand_lets(expr)
-
-        # Paso 3: expandir clases de caracteres (['a''b''c']) -> (a|b|c)
+        
+        # Paso 3: Expandir clases de caracteres, +, ? y balancear paréntesis
         expr = self._expand_char_classes(expr)
-
-        # Paso 4: expandir operadores como + y ?
         expr = self._expand_plus(expr)
         expr = self._expand_question(expr)
-
-        # Paso 5: balancear paréntesis
         expr = self._validate_and_balance_parentheses(expr)
 
         print(f"✅ Resultado final: {expr}")
         return expr
 
+    def process_literals(self, expr):
+        """
+        Procesa la cadena expr para detectar fragmentos entre comillas simples.
+        Si el contenido es de un solo carácter y es un símbolo especial, lo escapa;
+        en caso contrario, devuelve el contenido sin las comillas.
+        """
+        result = ""
+        i = 0
+        while i < len(expr):
+            if expr[i] == "'":
+                # Detectamos el inicio de un literal
+                literal = ""
+                i += 1  # Saltamos la comilla de apertura
+                # Acumular hasta la siguiente comilla
+                while i < len(expr) and expr[i] != "'":
+                    literal += expr[i]
+                    i += 1
+                # Saltar la comilla de cierre (si existe)
+                if i < len(expr) and expr[i] == "'":
+                    i += 1
+                # Procesar el literal usando el contenido interno (sin comillas)
+                inner = literal  # ya tenemos el contenido sin comillas
+                if len(inner) == 1 and inner in "()*+|.?":
+                    result += "\\" + inner
+                    print(f"📌 Escapando literal especial: '{literal}' -> \\{inner}")
+                else:
+                    result += inner
+                    print(f"🔎 Desempaquetando literal compuesto: '{literal}' -> {inner}")
+            else:
+                result += expr[i]
+                i += 1
+        return result
 
     def _strip_quotes(self, expr):
         expr = expr.strip()
@@ -297,3 +325,45 @@ class RegexExpander:
             print(f"🛠️ Expresión corregida: '{expr}' -> '{result}'")
 
         return result
+    
+
+    def _process_embedded_literals(self, expr):
+        """
+        Procesa manualmente la cadena 'expr' para detectar fragmentos entre comillas simples
+        y, en caso de que sean literales especiales (de un solo carácter entre ' y '), los
+        reemplaza por su versión escapada (por ejemplo, convierte '.' en '\.').
+        """
+        result = []
+        i = 0
+        while i < len(expr):
+            if expr[i] == "'":
+                # Encontramos el inicio de un literal
+                literal = ""
+                literal += expr[i]  # añade la comilla de apertura
+                i += 1
+                # Acumular el contenido hasta la siguiente comilla
+                while i < len(expr) and expr[i] != "'":
+                    literal += expr[i]
+                    i += 1
+                # Añadir la comilla de cierre (si existe)
+                if i < len(expr) and expr[i] == "'":
+                    literal += expr[i]
+                    i += 1
+                # Procesar el literal
+                inner = literal[1:-1]  # contenido sin las comillas
+                if len(inner) == 1 and inner in {'(', ')', '*', '+', '|', '.', '?'}:
+                    # Si es un literal especial de un solo carácter, escaparlo
+                    escaped = "\\" + inner
+                    print(f"📌 Escapando literal especial: {literal} -> {escaped}")
+                    result.append(escaped)
+                else:
+                    # Si es un literal compuesto, lo dejamos tal cual (o lo procesamos como requieras)
+                    print(f"🔎 Desempaquetando literal compuesto: {literal} -> {inner}")
+                    result.append(inner)
+            else:
+                result.append(expr[i])
+                i += 1
+        return ''.join(result)
+
+
+    

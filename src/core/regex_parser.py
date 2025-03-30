@@ -32,21 +32,18 @@ class RegexParser:
             # Determinar si se debe insertar un operador de concatenación
             if i + 1 < len(regex):
                 next_char = regex[i + 1]
-                # No insertar concatenación si el siguiente es '#' (inicio de marcador)
-                if next_char == '#':
-                    pass
-                else:
-                    # Se inserta concatenación si:
-                    # - c es literal, cierre de grupo o cierre de operador y
-                    # - next_char es literal, apertura de grupo o inicio de escape
-                    if ((c.isalnum() or c in [')', '*', '+', '?', '_']) and 
-                        (next_char.isalnum() or next_char in ['(', '\\', '_'])):
-                        new_regex += '.'
-                        print(f"[DEBUG] add_concatenation_operators - Insertando concatenación entre '{c}' y '{next_char}'")
+                # Se inserta concatenación si:
+                # - c es literal, cierre de grupo o cierre de operador y
+                # - next_char es literal, apertura de grupo, inicio de escape o inicio de marcador ('#')
+                if ((c.isalnum() or c in [')', '*', '+', '?', '_']) and 
+                    (next_char.isalnum() or next_char in ['(', '\\', '_', '#'])):
+                    new_regex += '.'
+                    print(f"[DEBUG] add_concatenation_operators - Insertando concatenación entre '{c}' y '{next_char}'")
             i += 1
 
         print("[DEBUG] add_concatenation_operators - Salida:", new_regex)
         return new_regex
+
 
     @staticmethod
     def infix_to_postfix(regex):
