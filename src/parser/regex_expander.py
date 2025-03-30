@@ -1,3 +1,5 @@
+# archivo: parser/regex_expander.py
+
 class RegexExpander:
     def __init__(self, let_definitions):
         self.let_definitions = let_definitions

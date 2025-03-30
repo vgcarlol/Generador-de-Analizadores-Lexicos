@@ -1,3 +1,5 @@
+# archivo: core/regex_parser.py
+
 class RegexParser:
     precedence = {'*': 3, '.': 2, '|': 1, '(': 0}
 

@@ -1,14 +1,9 @@
 # archivo: engine/runner.py
 
-<<<<<<< Updated upstream
-from engine.lexer import Lexer
-import sys
-=======
 import os
 from lexer import Lexer
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
->>>>>>> Stashed changes
 
 
 def run_lexer(input_file, output_file="salida.txt"):

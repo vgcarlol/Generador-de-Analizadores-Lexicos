@@ -1,3 +1,5 @@
+# archivo: core/minimization.py
+
 from collections import defaultdict
 from core.direct_construction import State 
 

@@ -1,4 +1,4 @@
-# Proyecto: Generador de Analizadores Lexicos a partir de YALex
+# archivo: parser/yal_parser.py
 
 # Estructura inicial del parser de YALex
 def parse_yal_file(filepath):
