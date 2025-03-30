@@ -11,23 +11,23 @@ class AFDGenerator:
 
     def build_combined_expression(self):
         parts = []
-        # Si deseas ignorar ws, la excluyes de la unión.
         for regex, token_id in self.token_regexes:
-            if token_id == "TOKEN_0":  # Asumiendo que ws es TOKEN_0.
+            # Si ws se quiere ignorar, se puede descartar (por ejemplo, TOKEN_0)
+            if token_id == "TOKEN_0":
                 continue
             regex = regex.strip()
             if regex.startswith('|'):
                 regex = regex[1:].strip()
             if not regex:
                 continue
+            # Envolver la expresión en paréntesis (si no lo está)
             if not (regex.startswith('(') and regex.endswith(')')):
                 regex = f"({regex})"
-            tagged = f"{regex}#{token_id}"
+            # Ahora se encapsula agregando la marca, de modo que la parte final es el marcador:
+            tagged = f"({regex}#{token_id})"
             parts.append(tagged)
-        # Encerrar toda la unión en paréntesis
+        # Encapsular toda la unión para que la raíz sea una unión de todas las alternativas
         return "(" + "|".join(parts) + ")"
-
-
 
     def _parenthesis_balanced(self, regex):
         count = 0
