@@ -36,6 +36,12 @@ def main(yal_file):
     generator = AFDGenerator(token_regexes)
     afd = generator.generate_afd()
 
+    from core.minimization import AFDMinimizer
+
+    print("🧽 Minimizando AFD...")
+    minimizer = AFDMinimizer(afd)
+    afd = minimizer.minimize()
+
     print("💾 Guardando AFD serializado...")
     generator.serialize_to_pickle(afd, OUTPUT_PICKLE)
     generator.serialize_to_json(afd, OUTPUT_JSON)
