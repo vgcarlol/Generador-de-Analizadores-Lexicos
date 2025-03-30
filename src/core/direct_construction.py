@@ -139,15 +139,17 @@ class DirectAFDConstructor:
 
                 current_state.transitions[symbol] = mapeo_estados[new_set]
 
-                # ➕ Asignar token_id a los estados finales (se asigna el primer token encontrado)
+                # ➕ Asignar token_id a los estados finales: si hay más de un marcador, elegir el que tenga la menor posición.
                 for state in estados_afd:
                     if not state.is_final:
                         continue
-                    for pos in state.positions:
-                        token_symbol = self.symbol_positions.get(pos)
-                        if token_symbol and token_symbol.startswith('#'):
-                            state.token_id = token_symbol[1:]
-                            break  # Asigna solo el primero que encuentre
+                    token_candidates = [(pos, self.symbol_positions[pos][1:]) 
+                                        for pos in state.positions 
+                                        if self.symbol_positions.get(pos, "").startswith('#')]
+                    if token_candidates:
+                        # Elegir el token cuyo número de posición sea el menor
+                        state.token_id = min(token_candidates, key=lambda x: x[0])[1]
+
 
         return estados_afd[0]
 
