@@ -21,7 +21,7 @@ class RegexExpander:
         expr = self._expand_plus(expr)
         expr = self._expand_question(expr)
         expr = self._validate_and_balance_parentheses(expr)
-        # Reemplazar los marcadores atómicos por sus patrones finales
+        # Reemplazar los marcadores atómicos (sellados) por sus patrones finales
         for marker, pattern in self.atomic_substitutions.items():
             expr = expr.replace(marker, pattern)
         print(f"✅ Resultado final: {expr}")
@@ -90,21 +90,16 @@ class RegexExpander:
                     if ident in self.let_definitions:
                         # Intercepción especial para 'ws' y 'number'
                         if ident == 'ws':
-                            marker = "##ATOMIC_WS##"
-                            # El patrón final deseado para whitespace
-                            final_ws = "[ \\t\\n]+"
+                            marker = "\uF001"
+                            final_ws = "[ \\t\\n\\r]+"
                             self.atomic_substitutions[marker] = final_ws
-                            print(f"🔁 Interceptando 'ws' y usando marcador: {marker} -> {final_ws}")
-                            result.append(marker)
-                            continue  # Saltar el resto de la expansión para 'ws'
-                        elif ident == 'number':
-                            marker = "##ATOMIC_NUMBER##"
-                            final_number = "([0-9]+)(\\.[0-9]+)?([Ee][+\\-]?[0-9]+)?"
-                            self.atomic_substitutions[marker] = final_number
-                            print(f"🔁 Interceptando 'number' y usando marcador: {marker} -> {final_number}")
                             result.append(marker)
                             continue
-
+                        elif ident == 'number':
+                            # Usamos la nueva función para sellar el patrón de número
+                            protected = self._freeze_number(self.let_definitions[ident])
+                            result.append(protected)
+                            continue
                         else:
                             expanded = self.let_definitions[ident]
                             print(f"🔁 Expandiendo '{ident}' como '{expanded}'")
@@ -121,46 +116,42 @@ class RegexExpander:
         expanded = expand(expr)
         print(f"🔄 Expansión completa: '{expr}' -> '{expanded}'")
         return expanded
-    
+
+    def _freeze_number(self, token_expr):
+        """
+        Expande recursivamente la definición interna de número y la "sella"
+        para que no sea alterada por expansiones posteriores.
+        """
+        expanded_inner = self.expand_lets(token_expr)
+        # En lugar de aplicar _expand_plus o _expand_question, simplemente se sella:
+        protected = f"<FINAL>{expanded_inner}</FINAL>"
+        print(f"🔁 Sellando token de número: {token_expr} -> {protected}")
+        # Guardamos en atomic_substitutions para luego reemplazar la marca
+        self.atomic_substitutions[f"<FINAL>{expanded_inner}</FINAL>"] = expanded_inner
+        return f"<FINAL>{expanded_inner}</FINAL>"
+
     def _expand_whitespace_token(self, token_expr):
-        """
-        Procesa la definición de whitespace para generar un patrón que reconozca
-        una o más ocurrencias de los caracteres definidos.
-        Se sella el resultado para que no se transforme más adelante.
-        """
-        # Si token_expr termina en '+' (como "delim+"), extraemos la parte base.
         if token_expr.endswith('+'):
             base = token_expr[:-1]
         else:
             base = token_expr
-
-        # Expandir recursivamente la parte base (por ejemplo, "delim")
         if base in self.let_definitions:
             base_expanded = self.expand_lets(self.let_definitions[base])
         else:
             base_expanded = base
-
-        # Se espera que base_expanded tenga la forma "[' ','\t','\n']"
         content = base_expanded.strip().strip("[]").replace("'", "").replace(",", "").strip()
         regex_class = f"[{content}]"
         expanded = f"({regex_class})+"
-        # Sella el patrón
         protected = f"<FINAL>{expanded}</FINAL>"
         print(f"🔁 Expandiendo token de whitespace: {token_expr} -> {protected}")
         return protected
 
     def _expand_number_token(self, token_expr):
-        """
-        Procesa la definición de número para garantizar que se agrupe correctamente,
-        expandiendo recursivamente cualquier identificador interno (como "digits").
-        Se sella el resultado para que no se transforme más adelante.
-        """
         expanded_inner = self.expand_lets(token_expr)
         expanded = f"({expanded_inner})"
         protected = f"<FINAL>{expanded}</FINAL>"
         print(f"🔁 Expandiendo token de número: {token_expr} -> {protected}")
         return protected
-
 
     def _expand_char_classes(self, expr):
         result = []
