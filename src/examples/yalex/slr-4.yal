@@ -15,6 +15,7 @@ rule tokens =
     ws        { return WHITESPACE } 
   | id        { return ID }               (* Cambie por una acción válida, que devuelva el token *)
   | number    { return NUMBER }
+  | digit     { return DIGIT }            (* ESTE LO AÑADÍ PARA PRUEBAS *)
   | ';'       { return SEMICOLON }
   | ":="      { return ASSIGNOP }
   | '<'       { return LT }

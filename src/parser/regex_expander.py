@@ -1,22 +1,29 @@
 class RegexExpander:
     def __init__(self, let_definitions):
         self.let_definitions = let_definitions
+        self.atomic_substitutions = {}
+
+
+class RegexExpander:
+    def __init__(self, let_definitions):
+        self.let_definitions = let_definitions
+        # Diccionario para almacenar marcadores atómicos
+        self.atomic_substitutions = {}
 
     def normalize(self, expr):
         print(f"🔎 Normalizando: {expr}")
-        
-        # Paso 1: Procesar literales incrustados sin usar re
+        # Paso 1: Procesar literales
         expr = self.process_literals(expr)
-        
-        # Paso 2: Expandir lets
+        # Paso 2: Expandir LETS (aquí se insertan los marcadores para ws y number)
         expr = self.expand_lets(expr)
-        
         # Paso 3: Expandir clases de caracteres, +, ? y balancear paréntesis
         expr = self._expand_char_classes(expr)
         expr = self._expand_plus(expr)
         expr = self._expand_question(expr)
         expr = self._validate_and_balance_parentheses(expr)
-
+        # Reemplazar los marcadores atómicos por sus patrones finales
+        for marker, pattern in self.atomic_substitutions.items():
+            expr = expr.replace(marker, pattern)
         print(f"✅ Resultado final: {expr}")
         return expr
 
@@ -81,12 +88,29 @@ class RegexExpander:
                         ident += expr[i]
                         i += 1
                     if ident in self.let_definitions:
-                        expanded = self.let_definitions[ident]
-                        print(f"🔁 Expandiendo '{ident}' como '{expanded}'")
-                        # Importante: No añadir paréntesis extras aquí
-                        expanded_result = expand(expanded)
-                        print(f"👉 Resultado de expandir '{ident}': '{expanded_result}'")
-                        result.append(expanded_result)
+                        # Intercepción especial para 'ws' y 'number'
+                        if ident == 'ws':
+                            marker = "##ATOMIC_WS##"
+                            # El patrón final deseado para whitespace
+                            final_ws = "[ \\t\\n]+"
+                            self.atomic_substitutions[marker] = final_ws
+                            print(f"🔁 Interceptando 'ws' y usando marcador: {marker} -> {final_ws}")
+                            result.append(marker)
+                            continue  # Saltar el resto de la expansión para 'ws'
+                        elif ident == 'number':
+                            marker = "##ATOMIC_NUMBER##"
+                            final_number = "([0-9]+)(\\.[0-9]+)?([Ee][+\\-]?[0-9]+)?"
+                            self.atomic_substitutions[marker] = final_number
+                            print(f"🔁 Interceptando 'number' y usando marcador: {marker} -> {final_number}")
+                            result.append(marker)
+                            continue
+
+                        else:
+                            expanded = self.let_definitions[ident]
+                            print(f"🔁 Expandiendo '{ident}' como '{expanded}'")
+                            expanded_result = expand(expanded)
+                            print(f"👉 Resultado de expandir '{ident}': '{expanded_result}'")
+                            result.append(expanded_result)
                     else:
                         result.append(ident)
                 else:
@@ -97,6 +121,46 @@ class RegexExpander:
         expanded = expand(expr)
         print(f"🔄 Expansión completa: '{expr}' -> '{expanded}'")
         return expanded
+    
+    def _expand_whitespace_token(self, token_expr):
+        """
+        Procesa la definición de whitespace para generar un patrón que reconozca
+        una o más ocurrencias de los caracteres definidos.
+        Se sella el resultado para que no se transforme más adelante.
+        """
+        # Si token_expr termina en '+' (como "delim+"), extraemos la parte base.
+        if token_expr.endswith('+'):
+            base = token_expr[:-1]
+        else:
+            base = token_expr
+
+        # Expandir recursivamente la parte base (por ejemplo, "delim")
+        if base in self.let_definitions:
+            base_expanded = self.expand_lets(self.let_definitions[base])
+        else:
+            base_expanded = base
+
+        # Se espera que base_expanded tenga la forma "[' ','\t','\n']"
+        content = base_expanded.strip().strip("[]").replace("'", "").replace(",", "").strip()
+        regex_class = f"[{content}]"
+        expanded = f"({regex_class})+"
+        # Sella el patrón
+        protected = f"<FINAL>{expanded}</FINAL>"
+        print(f"🔁 Expandiendo token de whitespace: {token_expr} -> {protected}")
+        return protected
+
+    def _expand_number_token(self, token_expr):
+        """
+        Procesa la definición de número para garantizar que se agrupe correctamente,
+        expandiendo recursivamente cualquier identificador interno (como "digits").
+        Se sella el resultado para que no se transforme más adelante.
+        """
+        expanded_inner = self.expand_lets(token_expr)
+        expanded = f"({expanded_inner})"
+        protected = f"<FINAL>{expanded}</FINAL>"
+        print(f"🔁 Expandiendo token de número: {token_expr} -> {protected}")
+        return protected
+
 
     def _expand_char_classes(self, expr):
         result = []
@@ -105,8 +169,7 @@ class RegexExpander:
             if expr[i] == '[':
                 j = i + 1
                 class_expr = ''
-                bracket_level = 1  # Por si acaso hay anidamiento extraño (aunque no es estándar)
-
+                bracket_level = 1  # Por si hay anidamiento (aunque no es estándar)
                 while j < len(expr) and bracket_level > 0:
                     if expr[j] == ']' and bracket_level == 1:
                         break
@@ -118,16 +181,18 @@ class RegexExpander:
                     result.append('[' + class_expr)
                     i = j
                 else:
-                    expanded = self._expand_class_content(class_expr)
-                    printable = ''.join(f"'{c}'" for c in expanded)
-                    print(f"🧱 Expandida clase [{class_expr}] -> ({'|'.join(expanded)})")
-
-                    result.append('(' + '|'.join(self._escape_char(c) for c in expanded) + ')')
+                    # Si el contenido NO tiene comillas simples, lo dejamos intacto.
+                    if "'" not in class_expr:
+                        result.append(expr[i:j+1])
+                    else:
+                        expanded = self._expand_class_content(class_expr)
+                        result.append('(' + '|'.join(self._escape_char(c) for c in expanded) + ')')
                     i = j + 1
             else:
                 result.append(expr[i])
                 i += 1
         return ''.join(result)
+
 
 
 
