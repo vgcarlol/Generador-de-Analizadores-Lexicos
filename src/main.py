@@ -5,6 +5,7 @@ from parser.yal_parser import parse_yal_file
 from parser.regex_expander import RegexExpander
 from generator.afd_generator import AFDGenerator
 from generator.lexer_generator import generate_lexer
+from core.minimization import AFDMinimizer
 
 from core.regex_parser import RegexParser
 
@@ -35,8 +36,6 @@ def main(yal_file):
     print("⚙️  Generando AFD...")
     generator = AFDGenerator(token_regexes)
     afd = generator.generate_afd()
-
-    from core.minimization import AFDMinimizer
 
     print("🧽 Minimizando AFD...")
     minimizer = AFDMinimizer(afd)

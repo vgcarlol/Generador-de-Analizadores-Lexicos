@@ -131,7 +131,7 @@ class DirectAFDConstructor:
                     continue
 
                 if new_set not in mapeo_estados:
-                    is_final = any(self.symbol_positions[p].startswith('#') for p in new_set)
+                    is_final = any(self.symbol_positions[p].startswith('#') or self.symbol_positions[p] == '$' for p in new_set)
                     new_state = State(new_set, is_final=is_final)
                     mapeo_estados[new_set] = new_state
                     estados_afd.append(new_state)

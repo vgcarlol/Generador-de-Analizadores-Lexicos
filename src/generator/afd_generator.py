@@ -1,5 +1,4 @@
 # archivo: generator/afd_generator.py
-
 import json
 import pickle
 from core.regex_parser import RegexParser
@@ -12,7 +11,7 @@ class AFDGenerator:
     def build_combined_expression(self):
         parts = []
         for regex, token_id in self.token_regexes:
-            # Si ws se quiere ignorar, se puede descartar (por ejemplo, TOKEN_0)
+            # Se descartan los tokens que se quieran ignorar (por ejemplo, whitespace)
             if token_id == "TOKEN_0":
                 continue
             regex = regex.strip()
@@ -20,21 +19,23 @@ class AFDGenerator:
                 regex = regex[1:].strip()
             if not regex:
                 continue
-            # Envolver la expresión en paréntesis (si no lo está)
+            # Envolver en paréntesis si no lo está
             if not (regex.startswith('(') and regex.endswith(')')):
                 regex = f"({regex})"
-            # Ahora se encapsula agregando la marca, de modo que la parte final es el marcador:
+            # Etiquetar la expresión con el id del token
             tagged = f"({regex}#{token_id})"
             parts.append(tagged)
-        # Encapsular toda la unión para que la raíz sea una unión de todas las alternativas
-        return "(" + "|".join(parts) + ")"
+        # Unir todas las expresiones con union
+        union_expr = "(" + "|".join(parts) + ")"
+        combined_expr = union_expr  # Sin el '$' final
+        return combined_expr
+
 
     def _parenthesis_balanced(self, regex):
         count = 0
         i = 0
         while i < len(regex):
             if regex[i] == '\\' and i + 1 < len(regex):
-                # Ignorar secuencias escapadas: \(
                 i += 2
                 continue
             elif regex[i] == '(':
@@ -49,13 +50,13 @@ class AFDGenerator:
     def generate_afd(self):
         combined_expr = self.build_combined_expression()
 
-        # DEBUG: Mostrar la regex combinada antes de convertir a postfix
+        # DEBUG: Mostrar la regex combinada
         print("\n📦 Expresión regular combinada:")
         print(combined_expr)
 
         postfix = RegexParser.infix_to_postfix(combined_expr)
 
-        # DEBUG: Mostrar la postfix generada
+        # DEBUG: Mostrar la expresión en postfix
         print("\n🔄 Expresión en postfix:")
         print(postfix)
 
@@ -63,11 +64,7 @@ class AFDGenerator:
         afd = constructor.get_afd()
         return afd
 
-
     def serialize_to_json(self, afd, filename):
-        """
-        Serializa el AFD a formato JSON (legible para humanos)
-        """
         def state_to_dict(state):
             return {
                 'id': state.id,
