@@ -13,21 +13,15 @@ class AFDGenerator:
         """
         self.token_regexes = token_regexes
 
-<<<<<<< Updated upstream
-=======
 
 
 
->>>>>>> Stashed changes
     def build_combined_expression(self):
         parts = []
         for idx, (regex, token_id) in enumerate(self.token_regexes):
             regex = regex.strip()
-<<<<<<< Updated upstream
-=======
             print(f"🧪 TOKEN {token_id}: {regex}")  # <-- Línea nueva
 
->>>>>>> Stashed changes
 
             # ⚠️ Elimina | inicial si existe
             if regex.startswith('|'):
@@ -37,13 +31,6 @@ class AFDGenerator:
                 print(f"⚠️ Regex vacía ignorada para {token_id}")
                 continue
 
-<<<<<<< Updated upstream
-            if not self._parenthesis_balanced(regex):
-                print(f"⚠️ Regex con paréntesis desbalanceados para {token_id}: '{regex}'")
-                continue
-
-            tagged = f"({regex}).#{token_id}"
-=======
             def debug_parentheses(expr):
                 stack = []
                 for i, c in enumerate(expr):
@@ -68,26 +55,12 @@ class AFDGenerator:
                 regex = f"({regex})"
             tagged = f"{regex}.#{token_id}"
 
->>>>>>> Stashed changes
             parts.append(tagged)
 
         return '|'.join(parts)
 
     def _parenthesis_balanced(self, regex):
         count = 0
-<<<<<<< Updated upstream
-        for char in regex:
-            if char == '(':
-                count += 1
-            elif char == ')':
-                count -= 1
-                if count < 0:
-                    return False
-        return count == 0
-
-
-
-=======
         i = 0
         while i < len(regex):
             if regex[i] == '\\' and i + 1 < len(regex):
@@ -103,7 +76,6 @@ class AFDGenerator:
             i += 1
         return count == 0
 
->>>>>>> Stashed changes
     def generate_afd(self):
         combined_expr = self.build_combined_expression()
 

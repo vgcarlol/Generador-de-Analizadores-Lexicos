@@ -1,10 +1,6 @@
 # Proyecto: Generador de Analizadores Lexicos a partir de YALex
 
 # Estructura inicial del parser de YALex
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 def parse_yal_file(filepath):
     """
     Parsea un archivo .yal, extrayendo:
@@ -18,16 +14,11 @@ def parse_yal_file(filepath):
 
     header, lets, rules, trailer = [], {}, [], []
     mode = 'header'
-<<<<<<< Updated upstream
-    for line in lines:
-        line = line.strip()
-=======
     for line_num, line in enumerate(lines, start=1):
         original_line = line.rstrip('\n')
         line = line.strip()
         print(f"[L{line_num:03}] Modo: {mode:<8} | Línea: {original_line}")
 
->>>>>>> Stashed changes
         if not line or line.startswith("(*"):
             continue  # ignorar líneas vacías o comentarios
 
@@ -52,34 +43,12 @@ def parse_yal_file(filepath):
 
         if mode == 'header':
             header.append(line)
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
         elif mode == 'lets' and line.startswith('let'):
             parts = line[4:].split('=')
             if len(parts) == 2:
                 ident = parts[0].strip()
                 regex = parts[1].strip()
                 lets[ident] = regex
-<<<<<<< Updated upstream
-        elif mode == 'rules':
-            if '{' in line and '}' in line:
-                parts = line.split('{')
-                regex = parts[0].strip()
-                action = parts[1].replace('}', '').strip()
-
-                # Quitar '|' al inicio si existe
-                if regex.startswith('|'):
-                    regex = regex[1:].strip()
-
-                # Si la expresión es un literal entre comillas simples o dobles
-                if (regex.startswith("'") and regex.endswith("'")) or (regex.startswith('"') and regex.endswith('"')):
-                    regex = regex[1:-1]
-
-
-                rules.append((regex, action))
-=======
                 print(f"🔧 LET '{ident}' = {regex}")
 
         elif mode == 'rules':
@@ -100,7 +69,6 @@ def parse_yal_file(filepath):
                     print(f"📌 Regla compuesta o identificador: {regex}")
                 rules.append((regex, action))
 
->>>>>>> Stashed changes
         elif mode == 'trailer':
             trailer.append(line)
 

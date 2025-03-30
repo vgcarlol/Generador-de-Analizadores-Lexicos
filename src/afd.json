@@ -53,138 +53,76 @@
     {
       "id": 5,
       "positions": [
-<<<<<<< Updated upstream
-        6,
-        7
-      ],
-      "is_final": true,
-      "transitions": {
-        "m": 5,
-        "#": 6
-=======
         6
       ],
       "is_final": false,
       "transitions": {
         "m": 6
->>>>>>> Stashed changes
       }
     },
     {
       "id": 6,
       "positions": [
-<<<<<<< Updated upstream
-        8
-      ],
-      "is_final": false,
-      "transitions": {
-        "T": 7
-=======
         7
       ],
       "is_final": true,
       "transitions": {
         "#": 7
->>>>>>> Stashed changes
       }
     },
     {
       "id": 7,
       "positions": [
-<<<<<<< Updated upstream
-        9
-      ],
-      "is_final": false,
-      "transitions": {
-        "O": 8
-=======
         8
       ],
       "is_final": false,
       "transitions": {
         "T": 8
->>>>>>> Stashed changes
       }
     },
     {
       "id": 8,
       "positions": [
-<<<<<<< Updated upstream
-        10
-      ],
-      "is_final": false,
-      "transitions": {
-        "K": 9
-=======
         9
       ],
       "is_final": false,
       "transitions": {
         "O": 9
->>>>>>> Stashed changes
       }
     },
     {
       "id": 9,
       "positions": [
-<<<<<<< Updated upstream
-        11
-      ],
-      "is_final": false,
-      "transitions": {
-        "E": 10
-=======
         10
       ],
       "is_final": false,
       "transitions": {
         "K": 10
->>>>>>> Stashed changes
       }
     },
     {
       "id": 10,
       "positions": [
-<<<<<<< Updated upstream
-        12
-      ],
-      "is_final": false,
-      "transitions": {
-        "N": 11
-=======
         11
       ],
       "is_final": false,
       "transitions": {
         "E": 11
->>>>>>> Stashed changes
       }
     },
     {
       "id": 11,
       "positions": [
-<<<<<<< Updated upstream
-        13
-      ],
-      "is_final": false,
-      "transitions": {
-        "0": 12
-=======
         12
       ],
       "is_final": false,
       "transitions": {
         "N": 12
->>>>>>> Stashed changes
       }
     },
     {
       "id": 12,
       "positions": [
-<<<<<<< Updated upstream
-        14
-      ],
-=======
         13
       ],
       "is_final": false,
@@ -1381,7 +1319,6 @@
       "positions": [
         132
       ],
->>>>>>> Stashed changes
       "is_final": true,
       "transitions": {}
     }
