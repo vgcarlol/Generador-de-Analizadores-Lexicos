@@ -10,7 +10,7 @@ class RegexParser:
         print("[DEBUG] add_concatenation_operators - Entrada:", regex)
         while i < len(regex):
             c = regex[i]
-            # Si se detecta un marcador, copiarlo completo sin modificarlo
+            # Si se detecta un marcador, copiarlo completo sin modificarlo.
             if c == '#':
                 marker = "#"
                 i += 1
@@ -18,31 +18,48 @@ class RegexParser:
                     marker += regex[i]
                     i += 1
                 new_regex += marker
-                continue  # Continuamos sin insertar concatenación dentro del marcador
-
-            # Manejar secuencias escapadas
+                continue
+            
+            # Si se detecta un literal entre comillas, copiarlo completo sin insertar puntos en su interior.
+            if c in ['"', "'"]:
+                quote = c
+                literal = c
+                i += 1
+                while i < len(regex) and regex[i] != quote:
+                    literal += regex[i]
+                    i += 1
+                if i < len(regex) and regex[i] == quote:
+                    literal += regex[i]
+                    i += 1
+                new_regex += literal
+                continue
+            
+            # Manejar secuencias escapadas.
             if c == '\\' and i + 1 < len(regex):
                 new_regex += regex[i:i+2]
                 i += 2
                 continue
-
-            # Copiar el carácter actual
+            
+            # Copiar el carácter actual.
             new_regex += c
-
-            # Determinar si se debe insertar un operador de concatenación
+            
+            # Insertar concatenación si el siguiente carácter inicia un átomo.
             if i + 1 < len(regex):
                 next_char = regex[i + 1]
-                # Se inserta concatenación si:
-                # - c es literal, cierre de grupo o cierre de operador y
-                # - next_char es literal, apertura de grupo, inicio de escape o inicio de marcador ('#')
-                if ((c.isalnum() or c in [')', '*', '+', '?', '_']) and 
-                    (next_char.isalnum() or next_char in ['(', '\\', '_', '#'])):
+                # Se consideran parte de un átomo:
+                # - Los caracteres alfanuméricos.
+                # - Algunos símbolos: ) * + ? _ / : < = - >
+                # - Y si el siguiente carácter es '(' o inicia una secuencia escapada,
+                #   o es el inicio de un marcador ('#') o de un literal (comienza con ' o ").
+                if ((c.isalnum() or c in [')', '*', '+', '?', '_', '/', ':', '<', '=', '-', '>']) and 
+                    (next_char.isalnum() or next_char in ['(', '\\', '_', '#', '/', ':', '<', '=', '-', '>', '"', "'"])):
                     new_regex += '.'
                     print(f"[DEBUG] add_concatenation_operators - Insertando concatenación entre '{c}' y '{next_char}'")
             i += 1
 
         print("[DEBUG] add_concatenation_operators - Salida:", new_regex)
         return new_regex
+    
 
 
     @staticmethod
