@@ -44,12 +44,8 @@ class Lexer:
         return results
 
     def _extract_token_id(self, state):
-        for pos in state.positions:
-            if isinstance(pos, int) and pos in self.start_state.positions:
-                continue
-            if isinstance(pos, str) and pos.startswith('#'):
-                return pos.strip('#')
-        return 'UNKNOWN'
+        return getattr(state, 'token_id', 'UNKNOWN')
+
 
 if __name__ == "__main__":
     lexer = Lexer('afd.pkl')

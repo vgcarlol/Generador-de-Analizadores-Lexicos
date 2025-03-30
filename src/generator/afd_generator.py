@@ -13,9 +13,6 @@ class AFDGenerator:
         """
         self.token_regexes = token_regexes
 
-
-
-
     def build_combined_expression(self):
         parts = []
         for idx, (regex, token_id) in enumerate(self.token_regexes):
@@ -44,8 +41,6 @@ class AFDGenerator:
                 for pos in stack:
                     print(f"🔺 Paréntesis de apertura sin cerrar en posición {pos}: '{expr}'")
 
-
-
             if not self._parenthesis_balanced(regex):
                 print(f"⚠️ Regex con paréntesis desbalanceados para {token_id}: '{regex}'")
                 debug_parentheses(regex)
@@ -53,7 +48,7 @@ class AFDGenerator:
 
             if not (regex.startswith('(') and regex.endswith(')')):
                 regex = f"({regex})"
-            tagged = f"{regex}.#{token_id}"
+            tagged = f"{regex}#{token_id}"
 
             parts.append(tagged)
 

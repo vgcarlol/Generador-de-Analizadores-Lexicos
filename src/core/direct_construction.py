@@ -142,6 +142,18 @@ class DirectAFDConstructor:
 
                 current_state.transitions[symbol] = mapeo_estados[new_set]
 
+                # ➕ Asignar token_id a los estados finales
+                for state in estados_afd:
+                    if not state.is_final:
+                        continue
+                    for pos in state.positions:
+                        symbol = self.symbol_positions.get(pos)
+                        if symbol and isinstance(symbol, str) and symbol.startswith('#'):
+                            state.token_id = symbol[1:]
+                            break  # asigna solo el primero que encuentre
+
+
+
         return estados_afd[0]
 
     def get_afd(self):

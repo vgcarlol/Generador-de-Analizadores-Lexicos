@@ -32,7 +32,10 @@ class RegexExpander:
             if len(inner) == 1 and inner in {'(', ')', '*', '+', '|', '.', '?'}:
                 print(f"📌 Escapando literal especial: '{inner}' -> \\{inner}")
                 return f"\\{inner}"
-            return inner
+            elif len(inner) > 1:
+                print(f"🔎 Desempaquetando literal compuesto: '{expr}' -> {inner}")
+            return ''.join(inner)
+
         if expr in {'(', ')', '*', '+', '|', '.', '?'}:
             print(f"📌 Escapando símbolo especial sin comillas: '{expr}' -> \\{expr}")
             return f"\\{expr}"
@@ -181,18 +184,37 @@ class RegexExpander:
                     i += 2
                     continue
 
-                # Expansión regular de a+
-                c = expr[i]
-                result.append(f"({c}.{c}*)")
-                print(f"➕ Expandiendo '{c}+' -> '({c}.{c}*)'")
-                i += 2
+                # Si es una agrupación como (...)+
+                if expr[i] == ')':
+                    # Buscar paréntesis de apertura correspondiente
+                    j = i
+                    count = 1
+                    while j > 0:
+                        j -= 1
+                        if expr[j] == ')':
+                            count += 1
+                        elif expr[j] == '(':
+                            count -= 1
+                            if count == 0:
+                                break
+                    if count == 0:
+                        group = expr[j:i+1]
+                        result = result[:-len(group)]
+                        result.append(f"({group}.{group}*)")
+                        print(f"➕ Expandiendo grupo {group}+ -> ({group}.{group}*)")
+                    else:
+                        print(f"⚠️ Error: paréntesis no balanceado al expandir '+'.")
+                    i += 2
+                else:
+                    # Expansión regular de a+
+                    c = expr[i]
+                    result.append(f"({c}.{c}*)")
+                    print(f"➕ Expandiendo '{c}+' -> '({c}.{c}*)'")
+                    i += 2
             else:
                 result.append(expr[i])
                 i += 1
         return ''.join(result)
-
-
-
 
     def _expand_question(self, expr):
         result = []
