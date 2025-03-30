@@ -365,6 +365,3 @@ class RegexExpander:
                 result.append(expr[i])
                 i += 1
         return ''.join(result)
-
-
-    
