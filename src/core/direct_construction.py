@@ -2,7 +2,6 @@
 
 from collections import defaultdict
 
-
 class Node:
     def __init__(self, symbol, nullable=False):
         self.symbol = symbol
@@ -12,7 +11,6 @@ class Node:
         self.firstpos = set()
         self.lastpos = set()
         self.position = None  # Se asignará solo a hojas
-
 
 class State:
     _id_counter = 0 
@@ -27,11 +25,10 @@ class State:
     def __repr__(self):
         return f"State(id={self.id}, final={self.is_final}, positions={self.positions}, transitions={self.transitions})"
 
-
 class DirectAFDConstructor:
     
     def __init__(self, regex_postfix):
-        self.regex_postfix = regex_postfix
+        self.regex_postfix = regex_postfix  # Ahora es una lista de tokens
         self.symbol_positions = {}  # Mapear símbolos a posiciones en el árbol
         self.followpos = defaultdict(set)  # Mapa de followpos para cada posición
         self.start_state = self.construct_afd()
@@ -40,29 +37,28 @@ class DirectAFDConstructor:
         stack = []
         position_counter = 1  # Contador para asignar posiciones únicas a hojas
 
-        for symbol in self.regex_postfix:
-            if symbol.isalnum() or symbol == "#":  # Es un carácter o el símbolo especial de fin
-                node = Node(symbol)
+        for token in self.regex_postfix:
+            if token not in {'*', '|', '.'}:
+                # Es un literal (hoja)
+                node = Node(token)
                 node.position = position_counter
                 node.firstpos.add(position_counter)
                 node.lastpos.add(position_counter)
-                self.symbol_positions[position_counter] = symbol
+                self.symbol_positions[position_counter] = token
                 position_counter += 1
                 stack.append(node)
-
-            elif symbol == '*':  # Cierre de Kleene
+            elif token == '*':  # Cierre de Kleene
                 if len(stack) < 1:
                     raise ValueError(f"Error: * sin operandos en '{self.regex_postfix}'")
                 child = stack.pop()
                 node = Node('*', nullable=True)
                 node.left = child
-                node.firstpos = child.firstpos
-                node.lastpos = child.lastpos
+                node.firstpos = child.firstpos.copy()
+                node.lastpos = child.lastpos.copy()
                 for pos in node.lastpos:
                     self.followpos[pos].update(node.firstpos)
                 stack.append(node)
-
-            elif symbol == '|':  # Unión
+            elif token == '|':  # Unión
                 if len(stack) < 2:
                     raise ValueError(f"Error: | sin suficientes operandos en '{self.regex_postfix}'")
                 right = stack.pop()
@@ -70,11 +66,10 @@ class DirectAFDConstructor:
                 node = Node('|', nullable=left.nullable or right.nullable)
                 node.left = left
                 node.right = right
-                node.firstpos = left.firstpos | right.firstpos
-                node.lastpos = left.lastpos | right.lastpos
+                node.firstpos = left.firstpos.union(right.firstpos)
+                node.lastpos = left.lastpos.union(right.lastpos)
                 stack.append(node)
-
-            elif symbol == '.':  # Concatenación
+            elif token == '.':  # Concatenación
                 if len(stack) < 2:
                     raise ValueError(f"Error: . sin suficientes operandos en '{self.regex_postfix}'")
                 right = stack.pop()
@@ -83,8 +78,8 @@ class DirectAFDConstructor:
                 node.left = left
                 node.right = right
                 node.nullable = left.nullable and right.nullable
-                node.firstpos = left.firstpos if not left.nullable else left.firstpos | right.firstpos
-                node.lastpos = right.lastpos if not right.nullable else right.lastpos | left.lastpos
+                node.firstpos = left.firstpos if not left.nullable else left.firstpos.union(right.firstpos)
+                node.lastpos = right.lastpos if not right.nullable else right.lastpos.union(left.lastpos)
                 for pos in left.lastpos:
                     self.followpos[pos].update(right.firstpos)
                 stack.append(node)
@@ -96,11 +91,12 @@ class DirectAFDConstructor:
                 new_root = Node('.')
                 new_root.left = left
                 new_root.right = root
-                new_root.firstpos = left.firstpos
-                new_root.lastpos = root.lastpos
+                new_root.nullable = left.nullable and root.nullable
+                new_root.firstpos = left.firstpos if not left.nullable else left.firstpos.union(root.firstpos)
+                new_root.lastpos = root.lastpos if not root.nullable else root.lastpos.union(left.lastpos)
                 for pos in left.lastpos:
                     self.followpos[pos].update(root.firstpos)
-                root = new_root  # Ahora este es el nuevo root
+                root = new_root
             stack.append(root)
 
         if len(stack) != 1:
@@ -108,12 +104,12 @@ class DirectAFDConstructor:
 
         return stack.pop()
 
-
     def construct_afd(self):
         syntax_tree_root = self.build_syntax_tree()
         start_positions = frozenset(syntax_tree_root.firstpos)
         estados_pendientes = [start_positions]
-        mapeo_estados = {start_positions: State(start_positions, is_final=('#' in [self.symbol_positions[p] for p in start_positions]))}
+        # El estado inicial es final si en sus posiciones se encuentra algún token que contenga '#' (la marca de token)
+        mapeo_estados = {start_positions: State(start_positions, is_final=any(self.symbol_positions[p].startswith('#') for p in start_positions))}
         estados_afd = [mapeo_estados[start_positions]]
 
         while estados_pendientes:
@@ -121,6 +117,7 @@ class DirectAFDConstructor:
             current_state = mapeo_estados[current_set]
 
             # Encontrar las transiciones para cada símbolo
+            from collections import defaultdict
             symbol_to_positions = defaultdict(set)
             for pos in current_set:
                 if pos not in self.symbol_positions:
@@ -134,7 +131,7 @@ class DirectAFDConstructor:
                     continue
 
                 if new_set not in mapeo_estados:
-                    is_final = '#' in [self.symbol_positions[p] for p in new_set]
+                    is_final = any(self.symbol_positions[p].startswith('#') for p in new_set)
                     new_state = State(new_set, is_final=is_final)
                     mapeo_estados[new_set] = new_state
                     estados_afd.append(new_state)
@@ -142,17 +139,15 @@ class DirectAFDConstructor:
 
                 current_state.transitions[symbol] = mapeo_estados[new_set]
 
-                # ➕ Asignar token_id a los estados finales
+                # ➕ Asignar token_id a los estados finales (se asigna el primer token encontrado)
                 for state in estados_afd:
                     if not state.is_final:
                         continue
                     for pos in state.positions:
-                        symbol = self.symbol_positions.get(pos)
-                        if symbol and isinstance(symbol, str) and symbol.startswith('#'):
-                            state.token_id = symbol[1:]
-                            break  # asigna solo el primero que encuentre
-
-
+                        token_symbol = self.symbol_positions.get(pos)
+                        if token_symbol and token_symbol.startswith('#'):
+                            state.token_id = token_symbol[1:]
+                            break  # Asigna solo el primero que encuentre
 
         return estados_afd[0]
 

@@ -118,47 +118,53 @@ class RegexExpander:
         return c
 
     def _expand_class_content(self, content):
+        # Quitar espacios en blanco al inicio y al final
+        content = content.strip()
         expanded = []
         i = 0
 
         def parse_char(start):
             if start >= len(content) or content[start] != "'":
                 return None, 1
-            if start + 2 >= len(content):
+            if start + 1 >= len(content):
                 return None, 1
-            if content[start + 1] == '\\':  # escape
+            # Si se encuentran dos comillas consecutivas, interpretamos que es un literal vacío
+            if content[start + 1] == "'":
+                return "", 2
+            if content[start + 1] == '\\':  # secuencia de escape
                 if start + 3 >= len(content) or content[start + 3] != "'":
                     return None, 1
-                token = content[start + 1:start + 3]  # example: \n
+                token = content[start + 1:start + 3]  # ejemplo: \n
                 return self._unescape_char(token), 4
-            else:  # regular char
+            else:  # carácter normal
                 if start + 2 >= len(content) or content[start + 2] != "'":
                     return None, 1
                 return content[start + 1], 3
 
         while i < len(content):
-            if i < len(content) and content[i] == "'":
+            if content[i] == "'":
                 ch1, len1 = parse_char(i)
-                if ch1 is None:
-                    i += 1
+                # Si el literal es None o está vacío, se descarta para evitar alternativas vacías
+                if ch1 is None or ch1 == "":
+                    i += len1
                     continue
-                
                 i += len1
                 if i + 1 < len(content) and content[i] == '-' and content[i + 1] == "'":
                     ch2, len2 = parse_char(i + 1)
-                    if ch2 is not None:
+                    if ch2 is not None and ch2 != "":
                         # Generar el rango de caracteres
                         char_range = [chr(c) for c in range(ord(ch1), ord(ch2) + 1)]
                         print(f"📊 Rango de caracteres: '{ch1}'-'{ch2}' -> {char_range}")
                         expanded.extend(char_range)
                         i += len2 + 1  # +1 por el '-'
                         continue
-                
                 expanded.append(ch1)
             else:
                 i += 1
-                
+
         return expanded
+
+
 
     def _unescape_char(self, token):
         if token == r'\n': return '\n'
@@ -258,7 +264,6 @@ class RegexExpander:
         return ''.join(result)
     
     def _validate_and_balance_parentheses(self, expr):
-        """Verifica y corrige paréntesis desbalanceados ignorando escapes como \( o \)"""
         stack = []
         fixed_expr = list(expr)
         i = 0

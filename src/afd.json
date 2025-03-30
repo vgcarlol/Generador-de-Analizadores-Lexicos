@@ -1,604 +1,442 @@
 {
   "states": [
     {
-      "id": 254,
+      "id": 21,
       "positions": [
-        194
+        1
       ],
       "is_final": true,
       "transitions": {
-        "#": 457
+        " ": 21,
+        "#TOKEN_0": 22,
+        "\\t": 21,
+        "\\n": 21
       }
     },
     {
-      "id": 457,
+      "id": 22,
       "positions": [
-        195
-      ],
-      "is_final": false,
-      "transitions": {
-        "T": 458
-      }
-    },
-    {
-      "id": 458,
-      "positions": [
-        196
-      ],
-      "is_final": false,
-      "transitions": {
-        "O": 459
-      }
-    },
-    {
-      "id": 459,
-      "positions": [
-        197
-      ],
-      "is_final": false,
-      "transitions": {
-        "K": 460
-      }
-    },
-    {
-      "id": 460,
-      "positions": [
-        198
-      ],
-      "is_final": false,
-      "transitions": {
-        "E": 461
-      }
-    },
-    {
-      "id": 461,
-      "positions": [
-        199
-      ],
-      "is_final": false,
-      "transitions": {
-        "N": 462
-      }
-    },
-    {
-      "id": 462,
-      "positions": [
-        200
-      ],
-      "is_final": false,
-      "transitions": {
-        "5": 257
-      }
-    },
-    {
-      "id": 257,
-      "positions": [
-        201
+        2
       ],
       "is_final": true,
       "transitions": {
-        "#": 463
+        "v": 39,
+        "i": 39,
+        "Z": 39,
+        "R": 39,
+        "U": 39,
+        "s": 39,
+        "L": 39,
+        "P": 39,
+        "k": 39,
+        "D": 39,
+        "t": 39,
+        "r": 39,
+        "y": 39,
+        "A": 39,
+        "K": 39,
+        "N": 39,
+        "T": 39,
+        "O": 39,
+        "u": 39,
+        "j": 39,
+        "c": 39,
+        "f": 39,
+        "M": 39,
+        "q": 39,
+        "o": 39,
+        "Q": 39,
+        "m": 39,
+        "B": 39,
+        "g": 39,
+        "S": 39,
+        "l": 39,
+        "p": 39,
+        "F": 39,
+        "h": 39,
+        "W": 39,
+        "w": 39,
+        "I": 39,
+        "n": 39,
+        "#TOKEN_1": 40,
+        "z": 39,
+        "d": 39,
+        "V": 39,
+        "e": 39,
+        "Y": 39,
+        "E": 39,
+        "G": 39,
+        "a": 39,
+        "b": 39,
+        "J": 39,
+        "H": 39,
+        "X": 39,
+        "x": 39,
+        "C": 39
       }
     },
     {
-      "id": 463,
+      "id": 39,
       "positions": [
-        202
+        3
       ],
       "is_final": false,
       "transitions": {
-        "T": 464
+        "5": 23,
+        "v": 39,
+        "i": 39,
+        "Z": 39,
+        "R": 39,
+        "U": 39,
+        "9": 23,
+        "s": 39,
+        "L": 39,
+        "P": 39,
+        "1": 23,
+        "6": 23,
+        "k": 39,
+        "'E'": 24,
+        "7": 23,
+        "D": 39,
+        "t": 39,
+        "r": 39,
+        "y": 39,
+        "\\+": 41,
+        "A": 39,
+        "K": 39,
+        "N": 39,
+        "T": 39,
+        "O": 39,
+        "u": 39,
+        "j": 39,
+        "2": 23,
+        "c": 39,
+        "f": 39,
+        "4": 23,
+        "M": 39,
+        "q": 39,
+        "o": 39,
+        "Q": 39,
+        "m": 39,
+        "B": 39,
+        "g": 39,
+        "S": 39,
+        "l": 39,
+        "p": 39,
+        "F": 39,
+        "-": 41,
+        "_": 39,
+        "h": 39,
+        "0": 23,
+        "W": 39,
+        "w": 39,
+        "I": 39,
+        "n": 39,
+        "8": 23,
+        "z": 39,
+        "d": 39,
+        "V": 39,
+        "e": 39,
+        "Y": 39,
+        "E": 39,
+        "G": 39,
+        "a": 39,
+        "b": 39,
+        "J": 39,
+        "H": 39,
+        "X": 39,
+        "3": 23,
+        "x": 39,
+        "C": 39
       }
     },
     {
-      "id": 464,
+      "id": 23,
       "positions": [
-        203
-      ],
-      "is_final": false,
-      "transitions": {
-        "O": 465
-      }
-    },
-    {
-      "id": 465,
-      "positions": [
-        204
-      ],
-      "is_final": false,
-      "transitions": {
-        "K": 466
-      }
-    },
-    {
-      "id": 466,
-      "positions": [
-        205
-      ],
-      "is_final": false,
-      "transitions": {
-        "E": 467
-      }
-    },
-    {
-      "id": 467,
-      "positions": [
-        206
-      ],
-      "is_final": false,
-      "transitions": {
-        "N": 468
-      }
-    },
-    {
-      "id": 468,
-      "positions": [
-        207
-      ],
-      "is_final": false,
-      "transitions": {
-        "6": 260
-      }
-    },
-    {
-      "id": 260,
-      "positions": [
-        208
+        5
       ],
       "is_final": true,
       "transitions": {
-        "#": 469
+        "5": 23,
+        "v": 39,
+        "i": 39,
+        "Z": 39,
+        "R": 39,
+        "U": 39,
+        "9": 23,
+        "#TOKEN_3": 26,
+        "s": 39,
+        "L": 39,
+        "P": 39,
+        "1": 23,
+        "6": 23,
+        "k": 39,
+        "'E'": 24,
+        ";": 26,
+        "7": 23,
+        "D": 39,
+        "t": 39,
+        "r": 39,
+        "y": 39,
+        "\\+": 41,
+        "A": 39,
+        "K": 39,
+        "N": 39,
+        "T": 39,
+        "O": 39,
+        "u": 39,
+        "j": 39,
+        "2": 23,
+        "c": 39,
+        "f": 39,
+        "4": 23,
+        "M": 39,
+        "q": 39,
+        "o": 39,
+        "Q": 39,
+        "m": 39,
+        "B": 39,
+        "g": 39,
+        "S": 39,
+        "l": 39,
+        "p": 39,
+        "F": 39,
+        "-": 41,
+        "_": 39,
+        "h": 39,
+        "0": 23,
+        "W": 39,
+        "w": 39,
+        "I": 39,
+        "n": 39,
+        "8": 23,
+        "z": 39,
+        "d": 39,
+        "V": 39,
+        "e": 39,
+        "Y": 39,
+        "E": 39,
+        "G": 39,
+        "a": 39,
+        "b": 39,
+        "J": 39,
+        "H": 39,
+        "X": 39,
+        "3": 23,
+        "x": 39,
+        "C": 39
       }
     },
     {
-      "id": 469,
+      "id": 41,
       "positions": [
-        209
+        7
       ],
       "is_final": false,
       "transitions": {
-        "T": 470
+        "5": 28,
+        "9": 28,
+        "1": 28,
+        "6": 28,
+        "7": 28,
+        "2": 28,
+        "4": 28,
+        "0": 28,
+        "8": 28,
+        "3": 28
       }
     },
     {
-      "id": 470,
+      "id": 28,
       "positions": [
-        210
-      ],
-      "is_final": false,
-      "transitions": {
-        "O": 471
-      }
-    },
-    {
-      "id": 471,
-      "positions": [
-        211
-      ],
-      "is_final": false,
-      "transitions": {
-        "K": 472
-      }
-    },
-    {
-      "id": 472,
-      "positions": [
-        212
-      ],
-      "is_final": false,
-      "transitions": {
-        "E": 473
-      }
-    },
-    {
-      "id": 473,
-      "positions": [
-        213
-      ],
-      "is_final": false,
-      "transitions": {
-        "N": 474
-      }
-    },
-    {
-      "id": 474,
-      "positions": [
-        214
-      ],
-      "is_final": false,
-      "transitions": {
-        "7": 263
-      }
-    },
-    {
-      "id": 263,
-      "positions": [
-        215
+        11
       ],
       "is_final": true,
       "transitions": {
-        "#": 475
+        "5": 28,
+        "9": 28,
+        "1": 28,
+        "6": 28,
+        "7": 28,
+        "#TOKEN_2": 27,
+        "2": 28,
+        "4": 28,
+        "0": 28,
+        "8": 28,
+        "3": 28
       }
     },
     {
-      "id": 475,
+      "id": 27,
       "positions": [
-        216
-      ],
-      "is_final": false,
-      "transitions": {
-        "T": 476
-      }
-    },
-    {
-      "id": 476,
-      "positions": [
-        217
-      ],
-      "is_final": false,
-      "transitions": {
-        "O": 477
-      }
-    },
-    {
-      "id": 477,
-      "positions": [
-        218
-      ],
-      "is_final": false,
-      "transitions": {
-        "K": 478
-      }
-    },
-    {
-      "id": 478,
-      "positions": [
-        219
-      ],
-      "is_final": false,
-      "transitions": {
-        "E": 479
-      }
-    },
-    {
-      "id": 479,
-      "positions": [
-        220
-      ],
-      "is_final": false,
-      "transitions": {
-        "N": 480
-      }
-    },
-    {
-      "id": 480,
-      "positions": [
-        221
-      ],
-      "is_final": false,
-      "transitions": {
-        "8": 267
-      }
-    },
-    {
-      "id": 267,
-      "positions": [
-        222
+        10
       ],
       "is_final": true,
       "transitions": {
-        "8": 267,
-        "#": 481
+        "#TOKEN_3": 26,
+        ";": 26
       }
     },
     {
-      "id": 481,
+      "id": 26,
       "positions": [
-        223
-      ],
-      "is_final": false,
-      "transitions": {
-        "T": 482
-      }
-    },
-    {
-      "id": 482,
-      "positions": [
-        224
-      ],
-      "is_final": false,
-      "transitions": {
-        "O": 483
-      }
-    },
-    {
-      "id": 483,
-      "positions": [
-        225
-      ],
-      "is_final": false,
-      "transitions": {
-        "K": 484
-      }
-    },
-    {
-      "id": 484,
-      "positions": [
-        226
-      ],
-      "is_final": false,
-      "transitions": {
-        "E": 485
-      }
-    },
-    {
-      "id": 485,
-      "positions": [
-        227
-      ],
-      "is_final": false,
-      "transitions": {
-        "N": 486
-      }
-    },
-    {
-      "id": 486,
-      "positions": [
-        228
-      ],
-      "is_final": false,
-      "transitions": {
-        "9": 256
-      }
-    },
-    {
-      "id": 256,
-      "positions": [
-        229
+        9
       ],
       "is_final": true,
       "transitions": {
-        "#": 487
+        ":=": 29,
+        "#TOKEN_4": 29
       }
     },
     {
-      "id": 487,
+      "id": 29,
       "positions": [
-        230
-      ],
-      "is_final": false,
-      "transitions": {
-        "T": 488
-      }
-    },
-    {
-      "id": 488,
-      "positions": [
-        231
-      ],
-      "is_final": false,
-      "transitions": {
-        "O": 489
-      }
-    },
-    {
-      "id": 489,
-      "positions": [
-        232
-      ],
-      "is_final": false,
-      "transitions": {
-        "K": 490
-      }
-    },
-    {
-      "id": 490,
-      "positions": [
-        233
-      ],
-      "is_final": false,
-      "transitions": {
-        "E": 491
-      }
-    },
-    {
-      "id": 491,
-      "positions": [
-        234
-      ],
-      "is_final": false,
-      "transitions": {
-        "N": 492
-      }
-    },
-    {
-      "id": 492,
-      "positions": [
-        235
-      ],
-      "is_final": false,
-      "transitions": {
-        "1": 493
-      }
-    },
-    {
-      "id": 493,
-      "positions": [
-        236
-      ],
-      "is_final": false,
-      "transitions": {
-        "0": 259
-      }
-    },
-    {
-      "id": 259,
-      "positions": [
-        237
+        12
       ],
       "is_final": true,
       "transitions": {
-        "#": 494
+        "#TOKEN_5": 30,
+        "<": 30
       }
     },
     {
-      "id": 494,
+      "id": 30,
       "positions": [
-        238
-      ],
-      "is_final": false,
-      "transitions": {
-        "T": 495
-      }
-    },
-    {
-      "id": 495,
-      "positions": [
-        239
-      ],
-      "is_final": false,
-      "transitions": {
-        "O": 496
-      }
-    },
-    {
-      "id": 496,
-      "positions": [
-        240
-      ],
-      "is_final": false,
-      "transitions": {
-        "K": 497
-      }
-    },
-    {
-      "id": 497,
-      "positions": [
-        241
-      ],
-      "is_final": false,
-      "transitions": {
-        "E": 498
-      }
-    },
-    {
-      "id": 498,
-      "positions": [
-        242
-      ],
-      "is_final": false,
-      "transitions": {
-        "N": 499
-      }
-    },
-    {
-      "id": 499,
-      "positions": [
-        243
-      ],
-      "is_final": false,
-      "transitions": {
-        "1": 500
-      }
-    },
-    {
-      "id": 500,
-      "positions": [
-        244
-      ],
-      "is_final": false,
-      "transitions": {
-        "1": 262
-      }
-    },
-    {
-      "id": 262,
-      "positions": [
-        245
+        13
       ],
       "is_final": true,
       "transitions": {
-        "#": 501
+        "#TOKEN_6": 31,
+        "=": 31
       }
     },
     {
-      "id": 501,
+      "id": 31,
       "positions": [
-        246
+        14
       ],
-      "is_final": false,
+      "is_final": true,
       "transitions": {
-        "T": 502
+        "\\+": 32,
+        "#TOKEN_7": 32
       }
     },
     {
-      "id": 502,
+      "id": 32,
       "positions": [
-        247
+        15
       ],
-      "is_final": false,
+      "is_final": true,
       "transitions": {
-        "O": 503
+        "#TOKEN_8": 33,
+        "-": 33
       }
     },
     {
-      "id": 503,
+      "id": 33,
       "positions": [
-        248
+        16
       ],
-      "is_final": false,
+      "is_final": true,
       "transitions": {
-        "K": 504
+        "\\*": 34,
+        "#TOKEN_9": 34
       }
     },
     {
-      "id": 504,
+      "id": 34,
       "positions": [
-        249
+        17
       ],
-      "is_final": false,
+      "is_final": true,
       "transitions": {
-        "E": 505
+        "#TOKEN_10": 35,
+        "/": 35
       }
     },
     {
-      "id": 505,
+      "id": 35,
       "positions": [
-        250
+        18
       ],
-      "is_final": false,
+      "is_final": true,
       "transitions": {
-        "N": 506
+        "#TOKEN_11": 36,
+        "\\(": 36
       }
     },
     {
-      "id": 506,
+      "id": 36,
       "positions": [
-        251
+        19
       ],
-      "is_final": false,
+      "is_final": true,
       "transitions": {
-        "1": 507
+        "#TOKEN_12": 37,
+        "\\)": 37
       }
     },
     {
-      "id": 507,
+      "id": 37,
       "positions": [
-        252
-      ],
-      "is_final": false,
-      "transitions": {
-        "2": 264
-      }
-    },
-    {
-      "id": 264,
-      "positions": [
-        253
+        20
       ],
       "is_final": true,
       "transitions": {}
+    },
+    {
+      "id": 24,
+      "positions": [
+        6
+      ],
+      "is_final": true,
+      "transitions": {
+        "#TOKEN_2": 27
+      }
+    },
+    {
+      "id": 40,
+      "positions": [
+        4
+      ],
+      "is_final": false,
+      "transitions": {
+        "5": 25,
+        "9": 25,
+        "1": 25,
+        "6": 25,
+        "'E'": 24,
+        "7": 25,
+        "\\+": 41,
+        "2": 25,
+        "4": 25,
+        "-": 41,
+        "0": 25,
+        "8": 25,
+        "3": 25
+      }
+    },
+    {
+      "id": 25,
+      "positions": [
+        8
+      ],
+      "is_final": true,
+      "transitions": {
+        "5": 25,
+        "9": 25,
+        "#TOKEN_3": 26,
+        "1": 25,
+        "6": 25,
+        ";": 26,
+        "7": 25,
+        "2": 25,
+        "4": 25,
+        "0": 25,
+        "8": 25,
+        "3": 25
+      }
     }
   ],
-  "start": 254
+  "start": 21
 }
