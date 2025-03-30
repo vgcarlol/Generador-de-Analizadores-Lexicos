@@ -173,36 +173,24 @@ class RegexExpander:
         i = 0
         while i < len(expr):
             if i + 1 < len(expr) and expr[i + 1] == '+':
-                if expr[i] == ')':
-                    # Buscar el paréntesis de apertura correspondiente
-                    j = i
-                    count = 1
-                    while j >= 0 and count > 0:
-                        j -= 1
-                        if expr[j] == ')':
-                            count += 1
-                        elif expr[j] == '(':
-                            count -= 1
-
-                    if j >= 0 and count == 0:
-                        group = expr[j:i+1]
-                        result = result[:-len(group)]
-                        result.append(f"({group}.{group}*)")
-                        print(f"➕ Expandiendo grupo {group}+ -> ({group}.{group}*)")
-                        i += 2
-                        continue
-                    else:
-                        print(f"⚠️ Error: '+' después de paréntesis no balanceados en {expr[i]}+")
-                else:
-                    c = expr[i]
-                    result.append(f"({c}.{c}*)")
-                    print(f"➕ Expandiendo '{c}+' -> '({c}.{c}*)'")
+                # No expandir si es una secuencia escapada, como \+
+                if expr[i] == '\\':
+                    result.append(expr[i])
+                    result.append(expr[i + 1])
+                    print(f"🚫 Ignorando expansión: '{expr[i]}{expr[i + 1]}' es un literal escapado")
                     i += 2
                     continue
+
+                # Expansión regular de a+
+                c = expr[i]
+                result.append(f"({c}.{c}*)")
+                print(f"➕ Expandiendo '{c}+' -> '({c}.{c}*)'")
+                i += 2
             else:
                 result.append(expr[i])
                 i += 1
         return ''.join(result)
+
 
 
 
