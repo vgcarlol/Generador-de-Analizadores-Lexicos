@@ -38,38 +38,8 @@ class DirectAFDConstructor:
         position_counter = 1  # Contador para asignar posiciones únicas a hojas
 
         for token in self.regex_postfix:
-            if token not in {'*', '|', '.'}:
-                # Es un literal (hoja)
-                node = Node(token)
-                node.position = position_counter
-                node.firstpos.add(position_counter)
-                node.lastpos.add(position_counter)
-                self.symbol_positions[position_counter] = token
-                position_counter += 1
-                stack.append(node)
-            elif token == '*':  # Cierre de Kleene
-                if len(stack) < 1:
-                    raise ValueError(f"Error: * sin operandos en '{self.regex_postfix}'")
-                child = stack.pop()
-                node = Node('*', nullable=True)
-                node.left = child
-                node.firstpos = child.firstpos.copy()
-                node.lastpos = child.lastpos.copy()
-                for pos in node.lastpos:
-                    self.followpos[pos].update(node.firstpos)
-                stack.append(node)
-            elif token == '|':  # Unión
-                if len(stack) < 2:
-                    raise ValueError(f"Error: | sin suficientes operandos en '{self.regex_postfix}'")
-                right = stack.pop()
-                left = stack.pop()
-                node = Node('|', nullable=left.nullable or right.nullable)
-                node.left = left
-                node.right = right
-                node.firstpos = left.firstpos.union(right.firstpos)
-                node.lastpos = left.lastpos.union(right.lastpos)
-                stack.append(node)
-            elif token == '.':  # Concatenación
+    # 1) Caso: token == '.' => es operador de concatenación
+            if token == '.':
                 if len(stack) < 2:
                     raise ValueError(f"Error: . sin suficientes operandos en '{self.regex_postfix}'")
                 right = stack.pop()
@@ -83,6 +53,44 @@ class DirectAFDConstructor:
                 for pos in left.lastpos:
                     self.followpos[pos].update(right.firstpos)
                 stack.append(node)
+
+            # 2) Caso: token == '*' => cierre de Kleene
+            elif token == '*':
+                if len(stack) < 1:
+                    raise ValueError(f"Error: * sin operandos en '{self.regex_postfix}'")
+                child = stack.pop()
+                node = Node('*', nullable=True)
+                node.left = child
+                node.firstpos = child.firstpos.copy()
+                node.lastpos = child.lastpos.copy()
+                for pos in node.lastpos:
+                    self.followpos[pos].update(node.firstpos)
+                stack.append(node)
+
+            # 3) Caso: token == '|' => unión
+            elif token == '|':
+                if len(stack) < 2:
+                    raise ValueError(f"Error: | sin suficientes operandos en '{self.regex_postfix}'")
+                right = stack.pop()
+                left = stack.pop()
+                node = Node('|', nullable=left.nullable or right.nullable)
+                node.left = left
+                node.right = right
+                node.firstpos = left.firstpos.union(right.firstpos)
+                node.lastpos = left.lastpos.union(right.lastpos)
+                stack.append(node)
+
+            # 4) De lo contrario => es un literal
+            else:
+                # Por ejemplo: '\.' => literal punto, 'a', 'b', '(', etc.
+                node = Node(token)
+                node.position = position_counter
+                node.firstpos.add(position_counter)
+                node.lastpos.add(position_counter)
+                self.symbol_positions[position_counter] = token
+                position_counter += 1
+                stack.append(node)
+
 
         if len(stack) > 1:
             root = stack.pop()
