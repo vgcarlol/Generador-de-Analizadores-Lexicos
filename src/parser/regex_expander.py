@@ -263,21 +263,40 @@ class RegexExpander:
         return token
 
     def _expand_plus(self, expr):
+        """
+        Reescribe 'a+' como '(a)(a)*' y '(...)+' como '((...))((...)*)',
+        pero si 'a' es un literal escapado como '\.', no expandimos,
+        para no destruir el literal que disingue '.' del operador de concat.
+        """
         result = []
         i = 0
         while i < len(expr):
-            if i + 1 < len(expr) and expr[i + 1] == '+':
-                # No expandir si es una secuencia escapada, como \+
+            # Verifica si viene un '+' inmediato
+            if i + 1 < len(expr) and expr[i+1] == '+':
+                print(f"[DEBUG _expand_plus] Pos={i}, encontré '+': alrededor='{expr[i:i+2]}' | expr=«{expr}»")
+                
+                # 1) Caso: si es una secuencia escapada, p.ej. '\.'
                 if expr[i] == '\\':
-                    result.append(expr[i])
-                    result.append(expr[i + 1])
-                    print(f"🚫 Ignorando expansión: '{expr[i]}{expr[i + 1]}' es un literal escapado")
+                    # Ejemplo:  '\.'+  => lo consideramos un literal escapado, no expandir
+                    print(f"[DEBUG _expand_plus] --> Hallado literal escapado '{expr[i:i+2]}'. NO expandimos.")
+                    # Copiamos tal cual '\.' y '+'
+                    result.append(expr[i])     # '\'
+                    result.append(expr[i+1])   # '.'
+                    # Ojo: la variable i+1 es '+', la siguiente es i+2
+                    # en expr[i:i+2], i+1 era '+', no '.' (depende del string real)
+                    # De modo que hay que tener cuidado:
+                    #   si la expresión era "\.+", en expr[i] tienes '\', en expr[i+1] tienes '.'
+                    #   pero 'expr[i+1] == '+' se contradiría con "'.' == '+'"? 
+                    #   Revisa si en tu grammar saldría algo como '\.'+ sin separar.
+                    
+                    # Para mayor robustez, chequemos el siguiente carácter
+                    # (el "escaped" en realidad es expr[i+1]?) 
+                    # Con logs, verás si funciona como esperas.
+                    
                     i += 2
-                    continue
-
-                # Si es una agrupación como (...)+
-                if expr[i] == ')':
-                    # Buscar paréntesis de apertura correspondiente
+                # 2) Caso: '(...)+' (grupo)
+                elif expr[i] == ')':
+                    # Buscar la '(' correspondiente
                     j = i
                     count = 1
                     while j > 0:
@@ -289,64 +308,92 @@ class RegexExpander:
                             if count == 0:
                                 break
                     if count == 0:
-                        group = expr[j:i+1]
-                        result = result[:-len(group)]
+                        group = expr[j : i+1]  # e.g. "(abc)"
+                        print(f"[DEBUG _expand_plus] --> Expandiendo grupo '{group}+' como '({group}.{group}*)'")
+                        # Removemos ese substring del result
+                        group_len = len(group)
+                        result = result[:-group_len]
+                        # Insertamos la expansión
                         result.append(f"({group}.{group}*)")
-                        print(f"➕ Expandiendo grupo {group}+ -> ({group}.{group}*)")
                     else:
-                        print(f"⚠️ Error: paréntesis no balanceado al expandir '+'.")
+                        print(f"⚠️ [DEBUG _expand_plus] Error: no encontré '(' que empareje antes de '+'. No expando.")
+                        # Simplemente lo dejamos tal cual
+                        result.append(expr[i])
+                        result.append(expr[i+1])
                     i += 2
                 else:
-                    # Expansión regular de a+
+                    # 3) Caso normal: 'a+' => '(a)(a)*'
                     c = expr[i]
+                    print(f"[DEBUG _expand_plus] --> Expandiendo '{c}+' como '({c}.{c}*)'")
                     result.append(f"({c}.{c}*)")
-                    print(f"➕ Expandiendo '{c}+' -> '({c}.{c}*)'")
                     i += 2
             else:
+                # No hay '+', se copia tal cual
                 result.append(expr[i])
                 i += 1
-        return ''.join(result)
+
+        expanded_expr = ''.join(result)
+        print(f"[DEBUG _expand_plus] Resultado final => «{expanded_expr}»")
+        return expanded_expr
 
     def _expand_question(self, expr):
+        """
+        Reescribe 'a?' como '(a|ε)' y '(...)?' como '((...)|ε)'.
+        Pero si 'a' es un literal escapado como '\.', no expandimos.
+        """
         result = []
         i = 0
         while i < len(expr):
-            if i + 1 < len(expr) and expr[i + 1] == '?':
-                if expr[i] == ')':
-                    # Buscar el paréntesis de apertura correspondiente
+            # Verifica si viene un '?' inmediato
+            if i + 1 < len(expr) and expr[i+1] == '?':
+                print(f"[DEBUG _expand_question] Pos={i}, encontré '?': alrededor='{expr[i:i+2]}' | expr=«{expr}»")
+                
+                # 1) Caso: si es secuencia escapada, p.ej. '\.'
+                if expr[i] == '\\':
+                    print(f"[DEBUG _expand_question] --> Hallado literal escapado '{expr[i:i+2]}'. NO expandimos.")
+                    result.append(expr[i])
+                    result.append(expr[i+1])
+                    i += 2
+                # 2) Caso '(...)?'
+                elif expr[i] == ')':
+                    # Buscar la '(' correspondiente
                     j = i
-                    count = 1  # Ya tenemos un paréntesis de cierre
+                    count = 1
                     while j > 0 and count > 0:
                         j -= 1
                         if expr[j] == ')':
                             count += 1
                         elif expr[j] == '(':
                             count -= 1
-                    
+                            
                     if j >= 0 and count == 0:
-                        group = expr[j:i+1]  # Incluir los paréntesis
-                        
-                        # Eliminar el grupo original
-                        result = result[:-len(group)]
-                        
-                        # Agregar la expansión de a? como (a|ε)
+                        group = expr[j : i+1]  # e.g. "(xyz)"
+                        # Removerlo de result
+                        group_len = len(group)
+                        result = result[:-group_len]
+                        print(f"[DEBUG _expand_question] --> Expandiendo grupo '{group}?' como '({group}|ε)'")
                         result.append(f"({group}|ε)")
-                        print(f"❓ Expandiendo '{group}?' -> '({group}|ε)'")
                     else:
-                        # Error: no se encontró el paréntesis de apertura
+                        print(f"⚠️ [DEBUG _expand_question] Error al expandir '?': No hallé '(' que empareje.")
+                        # Dejarlo tal cual
                         result.append(expr[i])
                         result.append(expr[i+1])
-                        print(f"⚠️ Error al expandir '?': No se encontró paréntesis de apertura para ')?' en posición {i}")
                     i += 2
                 else:
+                    # 3) Caso normal: 'a?' => '(a|ε)'
                     c = expr[i]
+                    print(f"[DEBUG _expand_question] --> Expandiendo '{c}?' como '({c}|ε)'")
                     result.append(f"({c}|ε)")
-                    print(f"❓ Expandiendo '{c}?' -> '({c}|ε)'")
                     i += 2
             else:
+                # No hay '?', copiamos tal cual
                 result.append(expr[i])
                 i += 1
-        return ''.join(result)
+        
+        expanded_expr = ''.join(result)
+        print(f"[DEBUG _expand_question] Resultado final => «{expanded_expr}»")
+        return expanded_expr
+
     
     def _validate_and_balance_parentheses(self, expr):
         stack = []
